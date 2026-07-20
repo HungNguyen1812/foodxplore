@@ -3,6 +3,7 @@ name: Crawl News
 on:
   schedule:
     - cron: "0 23,5 * * *"
+
   workflow_dispatch:
 
 permissions:
@@ -11,7 +12,7 @@ permissions:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 30
 
     steps:
       - name: Download source code
@@ -33,10 +34,34 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Add missing images and translate English
+      - name: Add missing article images
         working-directory: crawler
         run: npm run repair
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Cache Helsinki translation model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: helsinki-opus-mt-en-vi-v1
+
+      - name: Install translation packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install "transformers<5" sentencepiece requests langdetect
+
+      - name: Translate English articles to Vietnamese
+        working-directory: crawler
+        run: python translate_local.py
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
