@@ -67,7 +67,7 @@ async function findArticleImage(
     const response = await fetch(articleUrl, {
       headers: {
         'User-Agent':
-          'Mozilla/5.0 FoodXploreBot/1.0',
+          'Mozilla/5.0 foodpluseBot/1.0',
         Accept: 'text/html',
       },
       signal: AbortSignal.timeout(12000),

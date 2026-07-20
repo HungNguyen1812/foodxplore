@@ -4,11 +4,11 @@ import { Topbar } from '@/components/Topbar';
 import { Footer } from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'FoodXplore — Discover what shapes food',
+  title: 'foodpluse — Industry at a glance',
   description: 'Tổng hợp tin tức ngành thực phẩm từ 50+ nguồn trong nước và quốc tế. Cập nhật nhanh, chính xác, miễn phí.',
   keywords: ['tin thực phẩm', 'ngành F&B', 'food news', 'an toàn thực phẩm', 'food industry'],
   openGraph: {
-    title: 'FoodXplore — Discover what shapes food',
+    title: 'foodpluse — Industry at a glance',
     description: 'Tổng hợp tin tức ngành thực phẩm',
     type: 'website',
   },

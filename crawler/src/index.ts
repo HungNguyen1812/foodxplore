@@ -35,7 +35,7 @@ const parser: Parser<Record<string, unknown>, Record<string, unknown>> =
     timeout: 20000,
     headers: {
       'User-Agent':
-        'FoodXplore RSS Crawler/1.0 (+https://foodxplore-vgjo.vercel.app)',
+        'foodpluse RSS Crawler/1.0',
     },
     customFields: {
       item: [
@@ -853,7 +853,7 @@ async function updateCounts(): Promise<void> {
 
 async function main(): Promise<void> {
   console.log('');
-  console.log('FoodXplore RSS Crawler bắt đầu');
+  console.log('foodpluse RSS Crawler bắt đầu');
   console.log(
     `Thời gian: ${new Date().toLocaleString(
       'vi-VN',

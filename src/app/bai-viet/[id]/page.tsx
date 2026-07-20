@@ -87,12 +87,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await getArticle(params.id);
 
   if (!article) {
-    return { title: 'Không tìm thấy bài viết | FoodXplore' };
+    return { title: 'Không tìm thấy bài viết | foodpluse' };
   }
 
   return {
-    title: `${article.title} | FoodXplore`,
-    description: article.summary ?? 'Tin tức ngành thực phẩm trên FoodXplore',
+    title: `${article.title} | foodpluse`,
+    description: article.summary ?? 'Tin tức ngành thực phẩm trên foodpluse',
     openGraph: {
       title: article.title,
       description: article.summary ?? undefined,
@@ -167,7 +167,7 @@ export default async function ArticleDetailPage({ params }: Props) {
               <p className={styles.takeawayText}>{keyTakeaway}</p>
             ) : (
               <p className={styles.takeawayPending}>
-                Bản tóm lược độc lập đang được xử lý. FoodXplore không lặp lại
+                Bản tóm lược độc lập đang được xử lý. foodpluse không lặp lại
                 trích đoạn gốc ở phần này.
               </p>
             )}
@@ -184,7 +184,7 @@ export default async function ArticleDetailPage({ params }: Props) {
               {originalExcerpt ?? 'Nguồn RSS không cung cấp đoạn trích nguyên bản.'}
             </p>
             <p className={styles.copyrightNote}>
-              FoodXplore chỉ hiển thị phần trích dẫn do nguồn cung cấp. Đọc toàn bộ nội dung tại bài báo gốc bên dưới.
+              foodpluse chỉ hiển thị phần trích dẫn do nguồn cung cấp. Đọc toàn bộ nội dung tại bài báo gốc bên dưới.
             </p>
           </section>
 

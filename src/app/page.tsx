@@ -18,8 +18,10 @@ async function getHomeData(keyword = '') {
   const supabase = await createServerSupabaseClient();
 
   let articlesQuery = supabase
-    .from('v_hot_articles')
-    .select('*');
+    .from('articles')
+    .select('*')
+    .eq('is_archived', false)
+    .order('hot_score', { ascending: false });
 
   // Loại bỏ các ký tự có thể làm sai cú pháp truy vấn PostgREST
   const safeKeyword = keyword
@@ -35,15 +37,23 @@ async function getHomeData(keyword = '') {
   const [
     articlesRes,
     categoriesRes,
+    articleCountsRes,
     sourcesRes,
     trendsRes,
   ] = await Promise.all([
-    articlesQuery.limit(20),
+    // Supabase mặc định giới hạn kết quả. Lấy trực tiếp đủ bài đang hoạt động.
+    articlesQuery.limit(500),
 
     supabase
       .from('categories')
       .select('*')
       .order('sort_order', { ascending: true }),
+
+    supabase
+      .from('articles')
+      .select('category_slug')
+      .eq('is_archived', false)
+      .limit(1000),
 
     supabase
       .from('v_source_stats')
@@ -62,6 +72,7 @@ async function getHomeData(keyword = '') {
   return {
     articles: articlesRes.data ?? [],
     categories: categoriesRes.data ?? [],
+    articleCountRows: articleCountsRes.data ?? [],
     sources: sourcesRes.data ?? [],
     trends: trendsRes.data ?? [],
   };
@@ -78,14 +89,21 @@ export default async function HomePage({
   const {
     articles,
     categories,
+    articleCountRows,
     sources,
     trends,
   } = await getHomeData(searchQuery);
 
   const counts: Record<string, number> = {};
 
-  for (const category of categories) {
-    counts[category.slug] = category.article_count ?? 0;
+  counts['tong-hop'] = articleCountRows.length;
+
+  for (const row of articleCountRows) {
+    const slug = row.category_slug;
+
+    if (slug && slug !== 'tong-hop') {
+      counts[slug] = (counts[slug] ?? 0) + 1;
+    }
   }
 
   // Khi tìm kiếm, hiển thị tất cả kết quả dưới dạng danh sách.
@@ -93,7 +111,7 @@ export default async function HomePage({
   const featured = searchQuery ? undefined : articles[0];
   const articleList = searchQuery
     ? articles
-    : articles.slice(1, 14);
+    : articles.slice(1);
 
   return (
     <div className="layout container">

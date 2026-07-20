@@ -642,3 +642,26 @@ h1, h2, h3, h4, h5, h6 {
   position: relative;
   z-index: 2;
 }
+
+/* foodpluse supplied brand artwork */
+.brand-image {
+  position: relative;
+  display: block;
+  width: 300px;
+  height: 58px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #07110f;
+}
+
+.brand-image img {
+  object-fit: cover;
+  object-position: center;
+}
+
+@media (max-width: 700px) {
+  .brand-image {
+    width: 205px;
+    height: 48px;
+  }
+}
