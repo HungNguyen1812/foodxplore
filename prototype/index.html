@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodXplore — Discover what shapes food</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #fafaf9;
+  --bg-secondary: #f5f5f4;
+  --bg-card: #ffffff;
+  --color-forest: #15803d;
+  --color-forest-light: #6ee7b7;
+  --color-forest-bright: #4ade80;
+  --color-forest-mid: #34d399;
+  --color-amber: #ea580c;
+  --color-red-hot: #dc2626;
+  --text-primary: #0a0a0a;
+  --text-secondary: #525252;
+  --text-muted: #a3a3a3;
+  --border: #e5e5e5;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --sidebar-width: 200px;
+  --right-width: 300px;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #171717;
+  --bg-card: #171717;
+  --color-forest: #4ade80;
+  --color-forest-light: #86efac;
+  --color-forest-bright: #4ade80;
+  --color-forest-mid: #34d399;
+  --color-amber: #fb923c;
+  --color-red-hot: #f87171;
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d4;
+  --text-muted: #737373;
+  --border: #262626;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv02','cv03','cv04','cv11';
+  min-height: 100vh;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+/* ══════════════════════════════════════════════════════
+   TOPBAR
+   ══════════════════════════════════════════════════════ */
+.topbar {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+.topbar-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--color-forest-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  position: relative;
+  overflow: hidden;
+}
+[data-theme="dark"] .brand-logo { background: var(--color-forest-bright); }
+.brand-logo svg {
+  width: 24px;
+  height: 24px;
+  color: #0a0a0a;
+  fill: #0a0a0a;
+}
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.brand-name {
+  font-family: var(--font-sans);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+}
+.brand-name .x {
+  color: var(--color-forest-mid);
+}
+[data-theme="dark"] .brand-name .x { color: var(--color-forest-bright); }
+.brand-tagline {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+
+.topbar-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.topbar-date {
+  font-family: var(--font-sans);
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.icon-btn {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+.icon-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 6px 12px;
+  transition: all 0.2s;
+}
+.search-bar:focus-within {
+  border-color: var(--color-forest);
+  box-shadow: 0 0 0 3px rgba(21,128,61,0.08);
+}
+.search-bar input {
+  border: none; background: none; outline: none;
+  font-family: var(--font-sans); font-size: 0.83rem;
+  color: var(--text-primary);
+  width: 140px;
+  font-weight: 500;
+}
+.search-bar input::placeholder { color: var(--text-muted); font-weight: 400; }
+
+/* ══════════════════════════════════════════════════════
+   LAYOUT
+   ══════════════════════════════════════════════════════ */
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr var(--right-width);
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+  gap: 20px;
+  align-items: start;
+}
+
+.sidebar-left {
+  position: sticky;
+  top: 80px;
+  padding: 20px 0;
+}
+.sidebar-left-title {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 0 8px;
+  margin-bottom: 6px;
+}
+.category-list { display: flex; flex-direction: column; gap: 2px; }
+.cat-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.18s;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  border: none;
+  background: none;
+}
+.cat-tab:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.cat-tab.active {
+  background: var(--color-forest);
+  color: white;
+  font-weight: 600;
+}
+.cat-tab .cat-icon { font-size: 1rem; flex-shrink: 0; }
+.cat-tab .cat-name { flex: 1; text-align: left; }
+.cat-tab .cat-count {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(0,0,0,0.08);
+  padding: 1px 6px;
+  border-radius: 5px;
+  min-width: 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+.cat-tab.active .cat-count { background: rgba(255,255,255,0.25); opacity: 1; }
+
+/* ══════════════════════════════════════════════════════
+   MAIN CONTENT
+   ══════════════════════════════════════════════════════ */
+.main-content { padding: 20px 0; min-width: 0; }
+
+.breaking-banner {
+  background: var(--text-primary);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.breaking-banner::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-forest), var(--color-amber), var(--color-red-hot));
+}
+.breaking-badge {
+  background: var(--color-red-hot);
+  color: white;
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: blink-badge 1.5s ease-in-out infinite;
+}
+@keyframes blink-badge { 0%,100%{opacity:1} 50%{opacity:0.65} }
+.breaking-text {
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--bg-card);
+  line-height: 1.4;
+}
+.breaking-text a { color: inherit; }
+.breaking-text a:hover { color: var(--color-amber); }
+
+.section-label {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.article-featured {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  transition: all 0.25s;
+}
+.article-featured:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-forest);
+}
+.article-featured .article-img {
+  height: 260px;
+  overflow: hidden;
+}
+.article-featured .article-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+.article-featured:hover .article-img img { transform: scale(1.04); }
+.article-featured .article-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.article-meta-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.category-tag {
+  font-family: var(--font-sans);
+  font-size: 0.67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+.category-tag.food-safety { background: rgba(220,38,38,0.1); color: var(--color-red-hot); }
+.category-tag.business { background: rgba(37,99,235,0.1); color: #2563eb; }
+.category-tag.price { background: rgba(234,88,12,0.1); color: var(--color-amber); }
+.category-tag.tech { background: rgba(124,58,237,0.1); color: #7c3aed; }
+.category-tag.policy { background: rgba(8,145,178,0.1); color: #0891b2; }
+.category-tag.health { background: rgba(21,128,61,0.1); color: var(--color-forest); }
+.hot-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-red-hot);
+  font-variant-numeric: tabular-nums;
+}
+.hot-meter { display: flex; align-items: center; gap: 2px; }
+.hot-meter .bar { width: 3px; height: 10px; border-radius: 1px; background: var(--border); }
+.hot-meter.on .bar:nth-child(1) { background: var(--color-amber); }
+.hot-meter.on.mid .bar:nth-child(2) { background: var(--color-amber); }
+.hot-meter.on.hot .bar:nth-child(2), .hot-meter.on.hot .bar:nth-child(3) { background: var(--color-red-hot); }
+.hot-meter.on.fire .bar:nth-child(2), .hot-meter.on.fire .bar:nth-child(3), .hot-meter.on.fire .bar:nth-child(4) { background: var(--color-red-hot); }
+.article-featured .article-title {
+  font-family: var(--font-sans);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+.article-featured .article-title a:hover { color: var(--color-forest); }
+.article-featured .article-summary {
+  font-family: var(--font-sans);
+  font-size: 0.87rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.article-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.article-source {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-sans);
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.article-source .source-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--color-forest);
+}
+.article-time {
+  font-family: var(--font-sans);
+  font-size: 0.73rem;
+  color: var(--text-muted);
+}
+.read-btn {
+  font-family: var(--font-sans);
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--color-forest);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-forest);
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.read-btn:hover { background: var(--color-forest); color: white; }
+
+.article-list { display: flex; flex-direction: column; gap: 8px; }
+.article-card {
+  display: flex;
+  gap: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.article-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-forest);
+  transform: translateY(-1px);
+}
+.article-card .card-thumb {
+  width: 100px; height: 76px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.article-card .card-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+.article-card:hover .card-thumb img { transform: scale(1.06); }
+.article-card .card-body { flex: 1; min-width: 0; }
+.article-card .card-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+.article-card .card-title {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.article-card .card-title a:hover { color: var(--color-forest); }
+.article-card .card-summary {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.article-card .card-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 36px 20px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+.empty-state-icon { font-size: 2rem; margin-bottom: 8px; }
+.empty-state-text {
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+}
+.load-more-btn {
+  font-family: var(--font-sans);
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--color-forest);
+  padding: 9px 24px;
+  border: 1.5px solid var(--color-forest);
+  border-radius: 9px;
+  transition: all 0.2s;
+}
+.load-more-btn:hover { background: var(--color-forest); color: white; }
+
+/* ══════════════════════════════════════════════════════
+   RIGHT SIDEBAR
+   ══════════════════════════════════════════════════════ */
+.sidebar-right {
+  position: sticky;
+  top: 80px;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sidebar-section {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+.sidebar-section-title {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.source-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.source-item:last-child { border-bottom: none; }
+.source-info { display: flex; align-items: center; gap: 7px; }
+.source-flag { font-size: 0.9rem; }
+.source-name {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.source-type {
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.source-type.vn { background: rgba(220,38,38,0.1); color: #dc2626; }
+.source-type.intl { background: rgba(37,99,235,0.1); color: #2563eb; }
+.source-count {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.trending-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.trend-tag {
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.trend-tag:hover, .trend-tag.active {
+  background: var(--color-forest);
+  color: white;
+}
+.trend-tag .tag-weight {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  opacity: 0.6;
+  margin-left: 3px;
+}
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 0;
+}
+.cat-row-label {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  min-width: 85px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cat-bar { flex: 1; height: 3px; background: var(--bg-secondary); border-radius: 2px; overflow: hidden; }
+.cat-bar-fill { height: 100%; border-radius: 2px; }
+.cat-count { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; color: var(--text-muted); min-width: 22px; text-align: right; }
+
+.footer {
+  border-top: 1px solid var(--border);
+  margin-top: 32px;
+  padding: 20px;
+  background: var(--bg-card);
+}
+.footer-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.footer-brand {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.footer-brand .x { color: var(--color-forest-mid); }
+.footer-meta { font-family: var(--font-sans); font-size: 0.73rem; color: var(--text-muted); }
+.footer-meta a { color: var(--color-forest); font-weight: 500; }
+.footer-meta a:hover { text-decoration: underline; }
+
+@media (max-width: 1100px) {
+  :root { --right-width: 260px; --sidebar-width: 180px; }
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 160px 1fr; }
+  .sidebar-right { display: none; }
+}
+@media (max-width: 700px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar-left { position: static; padding: 12px 0; }
+  .category-list { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+  .cat-tab { width: auto; padding: 6px 10px; }
+  .cat-tab .cat-name { display: none; }
+  .cat-tab .cat-count { display: none; }
+  .search-bar { display: none; }
+  .brand-tagline { display: none; }
+  .article-featured { grid-template-columns: 1fr; }
+  .article-featured .article-img { height: 180px; }
+}
+@media (max-width: 500px) {
+  .layout { padding: 0 12px; gap: 12px; }
+  .topbar-inner { padding: 0 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+::selection { background: rgba(21,128,61,0.2); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand-wrap">
+      <div class="brand-logo">
+        <!-- FX Logo SVG: F + X với mũi tên lên trên -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <!-- F + X combined, arrow rising up-right -->
+          <path d="M3 4 L3 20 L5.5 20 L5.5 13.5 L10 13.5 L10 11.2 L5.5 11.2 L5.5 6.3 L11.5 6.3 L11.5 4 Z" fill="#0a0a0a"/>
+          <path d="M11 4 L13.8 4 L16.5 8 L19.2 4 L22 4 L17.7 10.2 L21.5 16.5 L18.7 16.5 L16.2 12.7 L13.5 16.5 L10.7 16.5 L14.6 10.2 Z" fill="#0a0a0a"/>
+          <!-- Arrow rising -->
+          <path d="M14.5 4 L20 4 L20 9.5" stroke="#0a0a0a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+          <path d="M14.5 4 L20 4 L20 9.5 L21.5 8 L19.5 11 Z" fill="#0a0a0a"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">Food<span class="x">Xplore</span></span>
+        <span class="brand-tagline">Discover what shapes food</span>
+      </div>
+    </div>
+    <div class="topbar-center">
+      <span class="topbar-date" id="currentDate"></span>
+    </div>
+    <div class="topbar-right">
+      <div class="search-bar">
+        <span style="font-size:0.82rem;">🔍</span>
+        <input type="text" placeholder="Tìm tin..." aria-label="Tìm kiếm">
+      </div>
+      <button class="icon-btn" id="themeToggle" aria-label="Đổi giao diện">🌙</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar-left">
+    <div class="sidebar-left-title">Danh mục</div>
+    <nav class="category-list" id="categoryList" role="navigation" aria-label="Danh mục tin">
+    </nav>
+  </aside>
+
+  <main class="main-content">
+
+    <div class="breaking-banner">
+      <div class="breaking-badge">🔥 Nóng</div>
+      <p class="breaking-text" id="breakingText"><a href="#">Đang tải...</a></p>
+    </div>
+
+    <p class="section-label" id="featuredLabel">🔥 Nổi bật</p>
+    <div id="featuredContainer"></div>
+
+    <p class="section-label" id="listLabel">📋 Tin mới nhất</p>
+    <div class="article-list" id="articleList"></div>
+
+    <div class="load-more" style="display:none;" id="loadMoreWrap">
+      <button class="load-more-btn" id="loadMoreBtn">Xem thêm tin →</button>
+    </div>
+  </main>
+
+  <aside class="sidebar-right">
+
+    <div class="sidebar-section">
+      <h3 class="sidebar-section-title">🔥 Xu hướng</h3>
+      <div class="trending-list" id="trendingKeywords"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3 class="sidebar-section-title">📡 Nguồn tin</h3>
+      <div id="sourceList"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3 class="sidebar-section-title">🏷️ Phân bổ</h3>
+      <div id="categoryBreakdown"></div>
+    </div>
+
+  </aside>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span style="color:var(--color-forest-mid);">●</span>
+      Food<span class="x">Xplore</span>
+    </div>
+    <div class="footer-meta">
+      Tổng hợp tin tức ngành thực phẩm từ 50+ nguồn trong nước và quốc tế.
+      <a href="#">Giới thiệu</a> · <a href="#">Liên hệ</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const articles = [
+  { id:1,  category:'kinh-doanh', catName:'Kinh doanh', catClass:'business',
+    title:'Vinamilk công bố kế hoạch mở rộng 5 nhà máy mới tại miền Trung và Tây Nguyên',
+    summary:'Vinamilk vừa công bố kế hoạch đầu tư 8.500 tỷ đồng xây 5 nhà máy sữa tại miền Trung và Tây Nguyên giai đoạn 2026–2028, nhằm đáp ứng nhu cầu tiêu dùng tăng 12%/năm tại khu vực.',
+    source:'VnExpress', country:'vn', time:'2 giờ trước',
+    hotScore:92.5, isHot:true,
+    image:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=400&fit=crop' },
+
+  { id:2,  category:'kinh-doanh', catName:'Kinh doanh', catClass:'business',
+    title:'Coca-Cola Việt Nam đầu tư 200 triệu USD xây nhà máy tại Bình Dương',
+    summary:'Coca-Cola được cấp phép xây nhà máy thứ 4 tại Việt Nam với vốn 200 triệu USD tại KCN Bình Dương, dự kiến vận hành từ Q3/2027.',
+    source:'VnEconomy', country:'vn', time:'45 phút trước',
+    hotScore:87.3, isHot:true,
+    image:'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=200&h=160&fit=crop' },
+
+  { id:3,  category:'kinh-doanh', catName:'Kinh doanh', catClass:'business',
+    title:'Masan đóng cửa 12 siêu thị VinMart, tập trung mô hình mini tại đô thị',
+    summary:'Masan Group thông báo đóng cửa 12 siêu thị VinMart không hiệu quả, chuyển hướng sang mô hình VinMart+ mini phù hợp với khu dân cư đô thị.',
+    source:'VietnamNet', country:'vn', time:'3 giờ trước',
+    hotScore:64.2, isHot:false,
+    image:'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=200&h=160&fit=crop' },
+
+  { id:4,  category:'an-toan-thuc-pham', catName:'ATTP', catClass:'food-safety',
+    title:'FDA cảnh báo 12 loại thực phẩm chức năng chứa chất cấm tại Hoa Kỳ',
+    summary:'Cơ quan Quản lý Thực phẩm và Dược phẩm Hoa Kỳ đưa ra cảnh báo khẩn về 12 sản phẩm thực phẩm chức năng bán trực tuyến chứa thành phần dược phẩm chưa được phê duyệt.',
+    source:'FDA', country:'intl', time:'1 giờ trước',
+    hotScore:94.1, isHot:true,
+    image:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200&h=160&fit=crop' },
+
+  { id:5,  category:'an-toan-thuc-pham', catName:'ATTP', catClass:'food-safety',
+    title:'Cục ATTP phát hiện 3 cơ sở bánh trung thu dùng nguyên liệu quá hạn',
+    summary:'Đợt kiểm tra cao điểm trước mùa Trung thu, Cục ATTP phát hiện 3 cơ sở tại TP.HCM dùng nguyên liệu quá hạn, xử phạt tổng 250 triệu đồng.',
+    source:'Cục ATTP', country:'vn', time:'5 giờ trước',
+    hotScore:78.5, isHot:false,
+    image:'https://images.unsplash.com/photo-1568376794508-ae52d6c7d05f?w=200&h=160&fit=crop' },
+
+  { id:6,  category:'gia-ca', catName:'Giá cả', catClass:'price',
+    title:'Giá cà phê robusta tăng 18% trong tháng 7 do thiếu hụt nguồn cung Brazil',
+    summary:'Giá cà phê robusta thế giới tăng 18% trong tháng 7, chạm đỉnh 2 năm, do Brazil — nước sản xuất lớn nhất — chịu ảnh hưởng nặng bởi hạn hán kéo dài.',
+    source:'Bloomberg', country:'intl', time:'2 giờ trước',
+    hotScore:79.5, isHot:false,
+    image:'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=200&h=160&fit=crop' },
+
+  { id:7,  category:'gia-ca', catName:'Giá cả', catClass:'price',
+    title:'Giá lúa gạo xuất khẩu Việt Nam tăng 12% đạt đỉnh 3 năm',
+    summary:'Theo VFA, giá gạo xuất khẩu loại 5% tấm đạt 638 USD/tấn — mức cao nhất kể từ năm 2023, do nhu cầu tăng mạnh từ châu Á và châu Phi.',
+    source:'VFA', country:'vn', time:'4 giờ trước',
+    hotScore:71.8, isHot:false,
+    image:'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200&h=160&fit=crop' },
+
+  { id:8,  category:'cong-nghe', catName:'Công nghệ', catClass:'tech',
+    title:'Nestlé ứng dụng AI trong quản lý chuỗi cung ứng tại Đông Nam Á',
+    summary:'Nestlé triển khai nền tảng AI của Google Cloud để tối ưu chuỗi cung ứng tại 6 quốc gia Đông Nam Á, giúp giảm 23% lãng phí thực phẩm trong vận chuyển.',
+    source:'FoodNavigator', country:'intl', time:'3 giờ trước',
+    hotScore:72.8, isHot:false,
+    image:'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=200&h=160&fit=crop' },
+
+  { id:9,  category:'cong-nghe', catName:'Công nghệ', catClass:'tech',
+    title:'Startup Việt Nam ra mắt ứng dụng truy xuất nguồn gốc rau quả bằng QR',
+    summary:'FreshTrace — startup tại Hà Nội — ra mắt ứng dụng cho phép người tiêu dùng quét QR truy xuất nguồn gốc rau quả từ trang trại đến cửa hàng trong 2 giây.',
+    source:'VnExpress', country:'vn', time:'6 giờ trước',
+    hotScore:56.4, isHot:false,
+    image:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=160&fit=crop' },
+
+  { id:10, category:'quy-dinh', catName:'Quy định', catClass:'policy',
+    title:'Bộ Y Tế ban hành quy định mới về dán nhãn dinh dưỡng thực phẩm đóng gói',
+    summary:'Bộ Y Tế ban hành Thông tư 15/2026/TT-BYT quy định nhãn dinh dưỡng bắt buộc trên thực phẩm đóng gói, có hiệu lực từ 01/01/2027.',
+    source:'Cục ATTP', country:'vn', time:'4 giờ trước',
+    hotScore:81.2, isHot:false,
+    image:'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=200&h=160&fit=crop' },
+
+  { id:11, category:'suc-khoe', catName:'Sức khỏe', catClass:'health',
+    title:'Xu hướng "protein thực vật" tăng 45% tại thị trường Việt Nam năm 2025',
+    summary:'Theo Euromonitor, thị trường protein thực vật tại Việt Nam tăng 45% trong năm 2025, đạt 2.3 tỷ USD — phản ánh sự chuyển dịch mạnh trong thói quen tiêu dùng.',
+    source:'VnExpress', country:'vn', time:'5 giờ trước',
+    hotScore:68.4, isHot:false,
+    image:'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200&h=160&fit=crop' },
+
+  { id:12, category:'suc-khoe', catName:'Sức khỏe', catClass:'health',
+    title:'WHO cảnh báo mức tiêu thụ đường toàn cầu vượt ngưỡng khuyến nghị 250%',
+    summary:'Báo cáo WHO cho thấy lượng đường tiêu thụ trung bình toàn cầu cao hơn 250% so với khuyến nghị, đặc biệt ở trẻ em, đe dọa béo phì và tiểu đường gia tăng.',
+    source:'Reuters', country:'intl', time:'8 giờ trước',
+    hotScore:75.0, isHot:false,
+    image:'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=200&h=160&fit=crop' },
+
+  { id:13, category:'nong-nghiep', catName:'Nông nghiệp', catClass:'health',
+    title:'Vietnam overtakes Thailand as world\'s second largest rice exporter',
+    summary:'Việt Nam vượt Thái Lan trở thành nước xuất khẩu gạo lớn thứ hai thế giới, với khối lượng 4.7 triệu tấn trong 6 tháng đầu 2026, tăng 22% cùng kỳ năm ngoái.',
+    source:'Reuters', country:'intl', time:'6 giờ trước',
+    hotScore:88.9, isHot:true,
+    image:'https://images.unsplash.com/photo-1568347355280-d33fdf77d42a?w=200&h=160&fit=crop' },
+
+  { id:14, category:'nong-nghiep', catName:'Nông nghiệp', catClass:'health',
+    title:'ĐBSCL chuyển đổi 50.000 ha sang canh tác lúa hữu cơ giai đoạn 2026–2030',
+    summary:'Bộ Nông nghiệp thông báo kế hoạch chuyển đổi 50.000 ha đất lúa tại Đồng bằng sông Cửu Long sang mô hình hữu cơ trong 5 năm tới.',
+    source:'Nông Nghiệp VN', country:'vn', time:'7 giờ trước',
+    hotScore:62.3, isHot:false,
+    image:'https://images.unsplash.com/photo-1530507629858-e3759c289668?w=200&h=160&fit=crop' },
+];
+
+const categories = [
+  { slug:'tong-hop', name:'Tổng hợp', icon:'📋' },
+  { slug:'kinh-doanh', name:'Kinh doanh', icon:'💼' },
+  { slug:'an-toan-thuc-pham', name:'ATTP', icon:'🛡️' },
+  { slug:'gia-ca', name:'Giá cả', icon:'📊' },
+  { slug:'cong-nghe', name:'Công nghệ', icon:'⚡' },
+  { slug:'quy-dinh', name:'Quy định', icon:'📜' },
+  { slug:'suc-khoe', name:'Sức khỏe', icon:'🥗' },
+  { slug:'nong-nghiep', name:'Nông nghiệp', icon:'🌾' },
+];
+
+const sources = [
+  { name:'VnExpress', flag:'🇻🇳', country:'vn', count:234 },
+  { name:'FoodNavigator', flag:'🌍', country:'intl', count:189 },
+  { name:'Reuters', flag:'🌍', country:'intl', count:156 },
+  { name:'FDA', flag:'🇺🇸', country:'intl', count:143 },
+  { name:'VietnamNet', flag:'🇻🇳', country:'vn', count:128 },
+  { name:'Bloomberg', flag:'🌍', country:'intl', count:112 },
+  { name:'VFA', flag:'🇻🇳', country:'vn', count:98 },
+];
+
+const trends = [
+  { keyword:'Vinamilk', weight:10 },
+  { keyword:'FDA recall', weight:9 },
+  { keyword:'protein thực vật', weight:8 },
+  { keyword:'cà phê robusta', weight:8 },
+  { keyword:'quy định 2027', weight:7 },
+  { keyword:'AI food tech', weight:7 },
+  { keyword:'xuất khẩu gạo', weight:6 },
+  { keyword:'food safety', weight:6 },
+  { keyword:'M&A F&B', weight:6 },
+];
+
+let activeCategory = 'tong-hop';
+
+function getCategoryCount(slug) {
+  if (slug === 'tong-hop') return articles.length;
+  return articles.filter(a => a.category === slug).length;
+}
+
+function getFilteredArticles(slug) {
+  if (slug === 'tong-hop') return [...articles].sort((a, b) => b.hotScore - a.hotScore);
+  return articles.filter(a => a.category === slug).sort((a, b) => b.hotScore - a.hotScore);
+}
+
+function makeHotClass(score) {
+  if (score >= 85) return 'fire';
+  if (score >= 70) return 'hot';
+  if (score >= 55) return 'mid';
+  return '';
+}
+
+function makeBarsHTML(score) {
+  const cls = makeHotClass(score);
+  return `<span class="hot-meter on ${cls}"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span>`;
+}
+
+function renderCategoryTabs() {
+  document.getElementById('categoryList').innerHTML = categories.map(cat => {
+    const count = getCategoryCount(cat.slug);
+    const isActive = cat.slug === activeCategory ? 'active' : '';
+    return `
+      <button class="cat-tab ${isActive}" data-slug="${cat.slug}">
+        <span class="cat-icon">${cat.icon}</span>
+        <span class="cat-name">${cat.name}</span>
+        <span class="cat-count">${count}</span>
+      </button>`;
+  }).join('');
+
+  document.querySelectorAll('.cat-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeCategory = btn.dataset.slug;
+      renderCategoryTabs();
+      renderFeed();
+    });
+  });
+}
+
+function renderFeed() {
+  const catObj = categories.find(c => c.slug === activeCategory);
+  const filtered = getFilteredArticles(activeCategory);
+  const featuredEl = document.getElementById('featuredContainer');
+  const listEl = document.getElementById('articleList');
+  const featLabel = document.getElementById('featuredLabel');
+  const listLabel = document.getElementById('listLabel');
+  const loadMoreWrap = document.getElementById('loadMoreWrap');
+
+  const icons = { 'tong-hop':'🔥','kinh-doanh':'💼','an-toan-thuc-pham':'🛡️','gia-ca':'📊','cong-nghe':'⚡','quy-dinh':'📜','suc-khoe':'🥗','nong-nghiep':'🌾' };
+  featLabel.textContent = `${icons[activeCategory] || '🔥'} ${catObj.name} nổi bật`;
+  listLabel.textContent = `📋 Tin ${catObj.name.toLowerCase()}`;
+
+  if (filtered.length === 0) {
+    featuredEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <div class="empty-state-text">Chưa có tin nào trong "${catObj.name}"</div>
+      </div>`;
+    listEl.innerHTML = '';
+    loadMoreWrap.style.display = 'none';
+    return;
+  }
+
+  const f = filtered[0];
+  featuredEl.innerHTML = `
+    <article class="article-featured">
+      <div class="article-img"><img src="${f.image}" alt="${f.title}"></div>
+      <div class="article-body">
+        <div>
+          <div class="article-meta-top">
+            <span class="category-tag ${f.catClass}">${f.catName}</span>
+            <span class="hot-indicator"><span>🔥</span>${makeBarsHTML(f.hotScore)}<span>${f.hotScore.toFixed(1)}</span></span>
+          </div>
+          <h2 class="article-title"><a href="#">${f.title}</a></h2>
+          <p class="article-summary">${f.summary}</p>
+        </div>
+        <div class="article-footer">
+          <div class="article-source"><span class="source-dot"></span>${f.source}</div>
+          <span class="article-time">${f.time}</span>
+          <a href="#" class="read-btn">Đọc →</a>
+        </div>
+      </div>
+    </article>`;
+
+  const rest = filtered.slice(1);
+  if (rest.length === 0) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <div class="empty-state-text">Đã hiển thị tất cả tin trong danh mục này.</div>
+      </div>`;
+    loadMoreWrap.style.display = 'none';
+    return;
+  }
+
+  listEl.innerHTML = rest.map(art => `
+    <article class="article-card">
+      <div class="card-thumb"><img src="${art.image}" alt="${art.title}" loading="lazy"></div>
+      <div class="card-body">
+        <div class="card-meta">
+          <span class="category-tag ${art.catClass}">${art.catName}</span>
+          ${art.isHot ? `<span class="hot-indicator"><span>🔥</span>${makeBarsHTML(art.hotScore)}<span>${art.hotScore.toFixed(1)}</span></span>` : ''}
+        </div>
+        <h3 class="card-title"><a href="#">${art.title}</a></h3>
+        <p class="card-summary">${art.summary}</p>
+        <div class="card-footer">
+          <div class="article-source">
+            <span class="source-dot" style="background:${art.country==='vn'?'#dc2626':'#2563eb'}"></span>${art.source}
+          </div>
+          <span class="article-time">${art.time}</span>
+        </div>
+      </div>
+    </article>
+  `).join('');
+
+  loadMoreWrap.style.display = rest.length >= 3 ? 'flex' : 'none';
+}
+
+function renderSources() {
+  document.getElementById('sourceList').innerHTML = sources.map(s => `
+    <div class="source-item">
+      <div class="source-info">
+        <span class="source-flag">${s.flag}</span>
+        <span class="source-name">${s.name}</span>
+        <span class="source-type ${s.country}">${s.country==='vn'?'VN':'INTL'}</span>
+      </div>
+      <span class="source-count">${s.count}</span>
+    </div>
+  `).join('');
+}
+
+function renderTrends() {
+  document.getElementById('trendingKeywords').innerHTML = trends.map(t => `
+    <button class="trend-tag" data-kw="${t.keyword}">#${t.keyword} <span class="tag-weight">${t.weight}</span></button>
+  `).join('');
+  document.querySelectorAll('.trend-tag').forEach(tag => {
+    tag.addEventListener('click', () => tag.classList.toggle('active'));
+  });
+}
+
+function renderCategoryBreakdown() {
+  const colors = ['#2563eb','#dc2626','#ea580c','#7c3aed','#0891b2','#16a34a','#c2410c','#65a30d'];
+  const cats = categories.slice(1);
+  const maxCount = Math.max(...cats.map(c => getCategoryCount(c.slug)));
+  document.getElementById('categoryBreakdown').innerHTML = cats.map((c, i) => {
+    const count = getCategoryCount(c.slug);
+    const pct = maxCount > 0 ? (count / maxCount * 100).toFixed(0) : 0;
+    return `
+      <div class="cat-row">
+        <span class="cat-row-label">${c.icon} ${c.name}</span>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:${pct}%;background:${colors[i]}"></div></div>
+        <span class="cat-count">${count}</span>
+      </div>`;
+  }).join('');
+}
+
+function initTheme() {
+  const t = document.getElementById('themeToggle');
+  if (localStorage.getItem('fx-theme') === 'dark') {
+    document.documentElement.setAttribute('data-theme','dark');
+    t.textContent = '☀️';
+  }
+  t.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    t.textContent = next === 'dark' ? '☀️' : '🌙';
+    localStorage.setItem('fx-theme', next);
+  });
+}
+
+function initDate() {
+  document.getElementById('currentDate').textContent = new Date().toLocaleDateString('vi-VN', {
+    weekday:'long', year:'numeric', month:'long', day:'numeric'
+  });
+}
+
+function initBreaking() {
+  const hot = [...articles].sort((a,b) => b.hotScore - a.hotScore)[0];
+  if (hot) {
+    document.getElementById('breakingText').innerHTML =
+      `<a href="#">${hot.title}</a> · ${hot.source} · ${hot.time}`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderCategoryTabs();
+  renderFeed();
+  renderSources();
+  renderTrends();
+  renderCategoryBreakdown();
+  initTheme();
+  initDate();
+  initBreaking();
+});
+</script>
+</body>
+</html>
