@@ -60,8 +60,8 @@ def fetch_international_articles():
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/articles"
     params = {
         "select": (
-            "id,title,summary,source_name,"
-            "source_country,language,updated_at"
+            "id,title,summary,original_title,original_summary,"
+            "source_name,source_country,language,translation_model,updated_at"
         ),
         "source_country": "eq.intl",
         "is_archived": "eq.false",
@@ -108,12 +108,16 @@ def translate_texts(tokenizer, model, texts):
     return translated
 
 
-def update_article(article_id, title, summary):
+def update_article(article_id, original_title, original_summary, title, summary):
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/articles?id=eq.{article_id}"
     payload = {
+        "original_title": original_title,
+        "original_summary": original_summary or None,
         "title": title,
         "summary": summary or None,
         "language": "vi",
+        "translation_model": MODEL_NAME,
+        "translated_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -128,11 +132,21 @@ def update_article(article_id, title, summary):
 
 def main():
     articles = fetch_international_articles()
-    articles_to_translate = [
-        article
-        for article in articles
-        if is_english(article.get("title"), article.get("summary"))
-    ]
+    articles_to_translate = []
+
+    for article in articles:
+        if article.get("translation_model") == MODEL_NAME:
+            continue
+
+        original_title = clean_text(article.get("original_title") or article.get("title"))
+        original_summary = clean_text(
+            article.get("original_summary") or article.get("summary")
+        )
+
+        if is_english(original_title, original_summary):
+            article["translation_source_title"] = original_title
+            article["translation_source_summary"] = original_summary
+            articles_to_translate.append(article)
 
     print(f"Found {len(articles_to_translate)} English articles to translate")
 
@@ -150,15 +164,14 @@ def main():
 
     for article in articles_to_translate:
         article_id = article["id"]
-        title = clean_text(article.get("title"))
-        summary = clean_text(article.get("summary"))
+        original_title = article["translation_source_title"]
+        original_summary = article["translation_source_summary"]
 
-        if title:
-            texts.append(title)
-            references.append((article_id, "title"))
+        texts.append(original_title)
+        references.append((article_id, "title"))
 
-        if summary:
-            texts.append(summary)
+        if original_summary:
+            texts.append(original_summary)
             references.append((article_id, "summary"))
 
     translated_texts = translate_texts(tokenizer, model, texts)
@@ -180,7 +193,13 @@ def main():
             print(f"Skipping article {article_id}: title translation is empty")
             continue
 
-        update_article(article_id, translated_title, translated_summary)
+        update_article(
+            article_id,
+            article["translation_source_title"],
+            article["translation_source_summary"],
+            translated_title,
+            translated_summary,
+        )
         updated_count += 1
         print(f"Updated article: {translated_title}")
 
