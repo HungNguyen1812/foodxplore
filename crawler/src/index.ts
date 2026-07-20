@@ -1,495 +1,959 @@
 #!/usr/bin/env tsx
-/**
- * FoodXplore RSS Crawler
- * 
- * Chức năng:
- *  1. Fetch RSS từ tất cả nguồn đang active
- *  2. Parse articles, trích xuất title, summary, image, pub_date
- *  3. Auto-classify vào categories dựa trên keyword matching
- *  4. Tính hot_score
- *  5. Deduplicate (check link tồn tại)
- *  6. Ghi vào Supabase
- *  7. Log crawl results
- * 
- * Chạy: npm run crawl
- */
 
 import Parser from 'rss-parser';
 import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
-import { formatDistanceToNow, parseISO } from 'date-fns';
 
-// ─── Config ────────────────────────────────────────────
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// ============================================================
+// CẤU HÌNH
+// ============================================================
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error('❌ Missing env vars: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error(
+    'Thiếu NEXT_PUBLIC_SUPABASE_URL hoặc SUPABASE_SERVICE_ROLE_KEY'
+  );
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-  auth: { persistSession: false },
-});
+const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  }
+);
 
-const parser = new Parser({
-  customFields: {
-    item: [
-      ['media:content', 'mediaContent'],
-      ['media:thumbnail', 'mediaThumbnail'],
-      ['content:encoded', 'contentEncoded'],
-      ['description', 'description'],
-    ],
-  },
-  timeout: 15000,
-  headers: {
-    'User-Agent': 'FoodXplore-Crawler/1.0 (+https://foodxplore.vercel.app)',
-  },
-});
+const parser: Parser<Record<string, unknown>, Record<string, unknown>> =
+  new Parser({
+    timeout: 20000,
+    headers: {
+      'User-Agent':
+        'FoodXplore RSS Crawler/1.0 (+https://foodxplore-vgjo.vercel.app)',
+    },
+    customFields: {
+      item: [
+        ['media:content', 'mediaContent'],
+        ['media:thumbnail', 'mediaThumbnail'],
+        ['content:encoded', 'contentEncoded'],
+        ['description', 'description'],
+      ],
+    },
+  });
 
-// ─── Category keywords ────────────────────────────────
-const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  'an-toan-thuc-pham': [
-    'an toàn thực phẩm', 'attp', 'food safety', 'recall', 'thu hồi',
-    'cấm', 'banned', 'vi phạm', 'kiểm nghiệm', 'chất cấm', 'độc hại',
-    'hàng giả', 'hàng kém chất lượng', 'hóa chất', 'trứng', 'thịt',
-    'gà', 'heo', 'bò', 'drug', 'contaminat', 'outbreak', 'e. coli',
-    'salmonella', 'listeria', 'inspection', 'fda warning', 'efsa',
-  ],
-  'kinh-doanh': [
-    'kinh doanh', 'doanh nghiệp', 'm&a', 'sáp nhập', 'mua lại',
-    'ipo', 'cổ phiếu', 'lợi nhuận', 'doanh thu', 'thị phần',
-    'thương mại', 'đầu tư', 'tập đoàn', 'công ty', 'startup',
-    'merger', 'acquisition', 'revenue', 'profit', 'valuation',
-    'expansion', 'subsidiary', 'venture', 'funding', 'deal',
-  ],
-  'gia-ca': [
-    'giá', 'xuất khẩu', 'nhập khẩu', 'biến động', 'tăng giá',
-    'giảm giá', 'thị trường', 'commodity', 'hàng hóa', 'lúa',
-    'gạo', 'cà phê', 'cao su', 'thủy sản', 'thịt', 'thanh long',
-    'tiêu', 'điều', 'lạm phát', 'inflation', 'price', 'export',
-    'import', 'tonnage', 'usda', 'fao', 'vfa', 'production',
-  ],
-  'cong-nghe': [
-    'công nghệ', 'tech', 'ai', 'tự động', 'robot', 'máy móc',
-    'đổi mới', 'sáng tạo', 'startup', 'app', 'ứng dụng', 'phần mềm',
-    'digital', 'automation', 'blockchain', 'sensors', 'packaging',
-    'processing', 'manufacturing', 'innovation', 'product launch',
-    'research', 'development', 'patent', 'technology',
-  ],
-  'quy-dinh': [
-    'quy định', 'chính sách', 'luật', 'thông tư', 'nghị định',
-    'bộ y tế', 'fda', 'efsa', 'who', 'codex', 'tiêu chuẩn',
-    'chứng nhận', 'giấy phép', 'regulation', 'policy', 'law',
-    'approval', 'mandate', 'compliance', 'standard', 'certification',
-  ],
-  'suc-khoe': [
-    'sức khỏe', 'dinh dưỡng', 'protein', 'vitamin', 'khoáng chất',
-    'chế độ ăn', 'giảm cân', 'béo phì', 'tiểu đường', 'tim mạch',
-    'thực phẩm chức năng', 'supplement', 'organic', 'hữu cơ',
-    'plant-based', 'vegan', 'vegetarian', 'gluten-free', 'health',
-    'nutrition', 'obesity', 'diabetes', 'heart', 'gut', 'microbiome',
-  ],
-  'nong-nghiep': [
-    'nông nghiệp', 'vùng nguyên liệu', 'trang trại', 'cây trồng',
-    'chăn nuôi', 'thủy sản', 'nuôi trồng', 'thu hoạch', 'mùa vụ',
-    'agriculture', 'farm', 'livestock', 'aquaculture', 'seafood',
-    'harvest', 'crop', 'yield', 'soil', 'fertilizer', 'pesticide',
-    'seed', 'drought', 'flood', 'climate', 'vietnam', 'region',
-  ],
-};
+// ============================================================
+// KIỂU DỮ LIỆU
+// ============================================================
 
-// ─── Type definitions ────────────────────────────────
-interface FeedSource {
+interface Source {
   id: string;
   name: string;
   feed_url: string;
   country: string;
   credibility_score: number;
-  category_slug: string;
 }
 
-interface ParsedArticle {
-  title: string;
-  link: string;
-  summary: string;
-  imageUrl: string | null;
-  pubDate: string;
-  sourceId: string;
-  sourceName: string;
-  sourceCountry: string;
-  categoryId: string;
-  categorySlug: string;
-  categoryName: string;
-  hotScore: number;
-  isHot: boolean;
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface HotKeyword {
+  keyword: string;
+  weight: number;
 }
 
 interface CrawlResult {
-  source: string;
-  status: 'success' | 'partial' | 'failed';
+  sourceId: string;
+  sourceName: string;
+  status: 'success' | 'partial' | 'error';
   articlesFound: number;
   articlesSaved: number;
   duplicates: number;
+  skipped: number;
   durationMs: number;
-  error?: string;
+  errorMessage?: string;
 }
 
-// ─── Helpers ─────────────────────────────────────────
-function normalizeText(str: string | undefined | null): string {
-  if (!str) return '';
-  return str
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 500);
-}
+// ============================================================
+// TỪ KHÓA LIÊN QUAN ĐẾN THỰC PHẨM
+// ============================================================
 
-function extractImage(item: Record<string, unknown>): string | null {
-  // media:content
-  const mc = item.mediaContent as Array<Record<string, unknown>> | undefined;
-  if (mc?.length) {
-    const img = mc.find((m: Record<string, unknown>) => String(m['$'] ?? '').includes('image') || (m['url'] as string)?.match(/\.(jpg|jpeg|png|webp)/i));
-    if (img?.url) return img.url as string;
+const FOOD_KEYWORDS = [
+  'thực phẩm',
+  'an toàn thực phẩm',
+  'đồ ăn',
+  'ăn uống',
+  'dinh dưỡng',
+  'lương thực',
+  'nông sản',
+  'nông nghiệp',
+  'nguyên liệu',
+  'phụ gia',
+  'chất bảo quản',
+  'đồ uống',
+  'nước giải khát',
+  'sữa',
+  'thịt',
+  'thủy sản',
+  'hải sản',
+  'gạo',
+  'cà phê',
+  'hạt điều',
+  'hạt tiêu',
+  'rau',
+  'trái cây',
+  'bánh',
+  'rượu',
+  'bia',
+  'nhà hàng',
+  'chế biến',
+  'xuất khẩu nông sản',
+  'food',
+  'food safety',
+  'beverage',
+  'nutrition',
+  'ingredient',
+  'additive',
+  'dairy',
+  'meat',
+  'seafood',
+  'rice',
+  'coffee',
+  'agriculture',
+  'restaurant',
+  'processing',
+  'recall',
+];
+
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  'an-toan-thuc-pham': [
+    'an toàn thực phẩm',
+    'ngộ độc',
+    'thu hồi',
+    'recall',
+    'chất cấm',
+    'độc hại',
+    'vi phạm',
+    'hàng giả',
+    'kiểm nghiệm',
+    'food safety',
+    'salmonella',
+    'listeria',
+    'e. coli',
+  ],
+
+  'kinh-doanh': [
+    'kinh doanh',
+    'doanh nghiệp',
+    'đầu tư',
+    'doanh thu',
+    'lợi nhuận',
+    'm&a',
+    'sáp nhập',
+    'mua lại',
+    'thị phần',
+    'công ty',
+    'tập đoàn',
+    'nhà máy',
+    'startup',
+    'revenue',
+    'profit',
+    'investment',
+  ],
+
+  'gia-ca': [
+    'giá',
+    'tăng giá',
+    'giảm giá',
+    'xuất khẩu',
+    'nhập khẩu',
+    'thị trường',
+    'gạo',
+    'cà phê',
+    'hạt tiêu',
+    'thủy sản',
+    'price',
+    'export',
+    'import',
+    'inflation',
+  ],
+
+  'cong-nghe': [
+    'công nghệ',
+    'đổi mới',
+    'sáng tạo',
+    'tự động hóa',
+    'robot',
+    'trí tuệ nhân tạo',
+    'bao bì',
+    'chế biến',
+    'food tech',
+    'technology',
+    'innovation',
+    'automation',
+    'packaging',
+    'processing',
+  ],
+
+  'quy-dinh': [
+    'quy định',
+    'chính sách',
+    'nghị định',
+    'thông tư',
+    'tiêu chuẩn',
+    'chứng nhận',
+    'bộ y tế',
+    'fda',
+    'efsa',
+    'regulation',
+    'policy',
+    'standard',
+    'certification',
+  ],
+
+  'suc-khoe': [
+    'sức khỏe',
+    'dinh dưỡng',
+    'vitamin',
+    'protein',
+    'chế độ ăn',
+    'giảm cân',
+    'béo phì',
+    'tiểu đường',
+    'thực phẩm chức năng',
+    'nutrition',
+    'health',
+    'supplement',
+    'organic',
+    'plant-based',
+  ],
+
+  'nong-nghiep': [
+    'nông nghiệp',
+    'nông sản',
+    'trang trại',
+    'chăn nuôi',
+    'nuôi trồng',
+    'thu hoạch',
+    'mùa vụ',
+    'vùng nguyên liệu',
+    'agriculture',
+    'farm',
+    'livestock',
+    'aquaculture',
+    'harvest',
+    'crop',
+  ],
+};
+
+const CATEGORY_NAMES: Record<string, string> = {
+  'tong-hop': 'Tổng hợp',
+  'kinh-doanh': 'Kinh doanh',
+  'an-toan-thuc-pham': 'An toàn thực phẩm',
+  'gia-ca': 'Giá cả & Xuất nhập khẩu',
+  'cong-nghe': 'Công nghệ & Đổi mới',
+  'quy-dinh': 'Quy định & Chính sách',
+  'suc-khoe': 'Sức khỏe & Dinh dưỡng',
+  'nong-nghiep': 'Nông nghiệp & Chuỗi cung ứng',
+};
+
+// ============================================================
+// HÀM HỖ TRỢ
+// ============================================================
+
+function cleanText(value: unknown): string {
+  if (!value) {
+    return '';
   }
-  // media:thumbnail
-  const mt = item.mediaThumbnail as Array<Record<string, unknown>> | undefined;
-  if (mt?.length && mt[0]?.url) return mt[0].url as string;
-  // enclosure
-  const enc = item.enclosure as Record<string, unknown> | undefined;
-  if (enc?.url && String(enc.type ?? '').startsWith('image/')) return enc.url as string;
-  // Try parse content
-  const content = normalizeText((item.contentEncoded as string) ?? (item['content'] as string) ?? '');
-  const imgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i);
-  if (imgMatch) return imgMatch[1];
+
+  const html = String(value);
+  const $ = cheerio.load(html);
+
+  return $.text()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeUrl(value: unknown): string {
+  if (!value) {
+    return '';
+  }
+
+  return String(value)
+    .trim()
+    .replace(/\s+/g, '');
+}
+
+function parseDate(value: unknown): string {
+  if (!value) {
+    return new Date().toISOString();
+  }
+
+  const date = new Date(String(value));
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString();
+  }
+
+  return date.toISOString();
+}
+
+function getMediaUrl(value: unknown): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const mediaItems = Array.isArray(value)
+    ? value
+    : [value];
+
+  for (const mediaItem of mediaItems) {
+    if (
+      typeof mediaItem !== 'object' ||
+      mediaItem === null
+    ) {
+      continue;
+    }
+
+    const item = mediaItem as Record<string, unknown>;
+    const attributes =
+      typeof item.$ === 'object' && item.$ !== null
+        ? (item.$ as Record<string, unknown>)
+        : item;
+
+    const url =
+      attributes.url ??
+      attributes.href ??
+      item.url;
+
+    if (typeof url === 'string' && url.startsWith('http')) {
+      return url;
+    }
+  }
+
   return null;
 }
 
-function parseDate(dateStr: string | undefined): string {
-  if (!dateStr) return new Date().toISOString();
-  try {
-    const d = parseISO(dateStr);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  } catch {}
-  try {
-    const d = new Date(dateStr);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  } catch {}
-  return new Date().toISOString();
+function extractImage(
+  item: Record<string, unknown>
+): string | null {
+  const mediaContentUrl = getMediaUrl(
+    item.mediaContent
+  );
+
+  if (mediaContentUrl) {
+    return mediaContentUrl;
+  }
+
+  const mediaThumbnailUrl = getMediaUrl(
+    item.mediaThumbnail
+  );
+
+  if (mediaThumbnailUrl) {
+    return mediaThumbnailUrl;
+  }
+
+  if (
+    typeof item.enclosure === 'object' &&
+    item.enclosure !== null
+  ) {
+    const enclosure =
+      item.enclosure as Record<string, unknown>;
+
+    if (
+      typeof enclosure.url === 'string' &&
+      enclosure.url.startsWith('http')
+    ) {
+      return enclosure.url;
+    }
+  }
+
+  const rawContent = String(
+    item.contentEncoded ??
+    item.content ??
+    item.description ??
+    item.summary ??
+    ''
+  );
+
+  const $ = cheerio.load(rawContent);
+  const imageUrl =
+    $('img').first().attr('src') ??
+    $('img').first().attr('data-src') ??
+    $('img').first().attr('data-original');
+
+  return imageUrl?.startsWith('http')
+    ? imageUrl
+    : null;
 }
 
-function classifyCategory(title: string, summary: string): { id: string; slug: string; name: string } {
+function isFoodRelated(
+  title: string,
+  summary: string
+): boolean {
   const text = `${title} ${summary}`.toLowerCase();
 
-  let bestMatch = { slug: '', score: 0, name: '' };
-  for (const [slug, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+  return FOOD_KEYWORDS.some((keyword) =>
+    text.includes(keyword.toLowerCase())
+  );
+}
+
+function classifyCategory(
+  title: string,
+  summary: string,
+  categories: Category[]
+): Category {
+  const text = `${title} ${summary}`.toLowerCase();
+
+  let bestSlug = 'tong-hop';
+  let bestScore = 0;
+
+  for (const [slug, keywords] of Object.entries(
+    CATEGORY_KEYWORDS
+  )) {
     let score = 0;
-    for (const kw of keywords) {
-      if (text.includes(kw.toLowerCase())) score++;
+
+    for (const keyword of keywords) {
+      if (text.includes(keyword.toLowerCase())) {
+        score += 1;
+      }
     }
-    if (score > bestMatch.score) {
-      const nameMap: Record<string, string> = {
-        'an-toan-thuc-pham': 'An toàn thực phẩm',
-        'kinh-doanh': 'Kinh doanh',
-        'gia-ca': 'Giá cả',
-        'cong-nghe': 'Công nghệ',
-        'quy-dinh': 'Quy định',
-        'suc-khoe': 'Sức khỏe',
-        'nong-nghiep': 'Nông nghiệp',
-      };
-      bestMatch = { slug, score, name: nameMap[slug] ?? slug };
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestSlug = slug;
     }
   }
 
-  if (bestMatch.score === 0) {
-    return { id: '', slug: 'tong-hop', name: 'Tổng hợp' };
+  const matchedCategory = categories.find(
+    (category) => category.slug === bestSlug
+  );
+
+  if (matchedCategory) {
+    return matchedCategory;
   }
 
-  return { id: '', slug: bestMatch.slug, name: bestMatch.name };
+  const fallbackCategory = categories.find(
+    (category) => category.slug === 'tong-hop'
+  );
+
+  if (fallbackCategory) {
+    return fallbackCategory;
+  }
+
+  return {
+    id: '',
+    slug: bestSlug,
+    name: CATEGORY_NAMES[bestSlug] ?? 'Tổng hợp',
+  };
 }
 
-async function getCategories() {
-  const { data } = await supabase.from('categories').select('id, name, slug');
-  return data ?? [];
-}
-
-async function getActiveSources() {
-  const { data } = await supabase
-    .from('sources')
-    .select('id, name, feed_url, country, credibility_score')
-    .eq('is_active', true)
-    .not('feed_url', 'is', null);
-  return (data ?? []) as FeedSource[];
-}
-
-async function getHotKeywords(): Promise<Array<{ keyword: string; weight: number }>> {
-  const { data } = await supabase
-    .from('hot_keywords')
-    .select('keyword, weight')
-    .eq('is_active', true);
-  return data ?? [];
-}
-
-async function articleExists(link: string): Promise<boolean> {
-  const { count } = await supabase
-    .from('articles')
-    .select('*', { count: 'exact', head: true })
-    .eq('link', link);
-  return (count ?? 0) > 0;
-}
-
-async function calculateHotScore(
-  sourceCred: number,
+function calculateHotScore(
+  credibilityScore: number,
   pubDate: string,
   title: string,
   summary: string,
-  hotKeywords: Array<{ keyword: string; weight: number }>
-): Promise<number> {
-  // 1. Source score (0-50)
-  const sourceScore = (sourceCred ?? 5) * 5;
+  hotKeywords: HotKeyword[]
+): number {
+  const sourceScore =
+    Math.min(Math.max(credibilityScore || 5, 1), 10) * 5;
 
-  // 2. Time decay (0-50) — giảm 1 điểm mỗi 2 giờ
-  const ageHours = (Date.now() - new Date(pubDate).getTime()) / (1000 * 60 * 60);
-  const timeDecay = Math.max(0, 50 - ageHours / 2);
+  const publishedTime = new Date(pubDate).getTime();
+  const ageHours = Math.max(
+    0,
+    (Date.now() - publishedTime) /
+      (1000 * 60 * 60)
+  );
 
-  // 3. Keyword boost (0-20)
+  const timeScore = Math.max(
+    0,
+    50 - ageHours / 2
+  );
+
   const text = `${title} ${summary}`.toLowerCase();
   let keywordScore = 0;
-  for (const kw of hotKeywords) {
-    if (text.includes(kw.keyword.toLowerCase())) {
-      keywordScore += kw.weight * 1.5;
+
+  for (const hotKeyword of hotKeywords) {
+    if (
+      text.includes(
+        hotKeyword.keyword.toLowerCase()
+      )
+    ) {
+      keywordScore += hotKeyword.weight;
     }
   }
+
   keywordScore = Math.min(keywordScore, 20);
 
-  return Math.round((sourceScore + timeDecay + keywordScore) * 100) / 100;
+  return Number(
+    (
+      sourceScore +
+      timeScore +
+      keywordScore
+    ).toFixed(2)
+  );
 }
 
-// ─── Main crawl function ──────────────────────────────
+async function articleExists(
+  link: string
+): Promise<boolean> {
+  const { count, error } = await supabase
+    .from('articles')
+    .select('id', {
+      count: 'exact',
+      head: true,
+    })
+    .eq('link', link);
+
+  if (error) {
+    throw new Error(
+      `Không kiểm tra được bài trùng: ${error.message}`
+    );
+  }
+
+  return (count ?? 0) > 0;
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+// ============================================================
+// ĐỌC DỮ LIỆU CẤU HÌNH
+// ============================================================
+
+async function getCategories(): Promise<Category[]> {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, name, slug')
+    .eq('is_active', true)
+    .order('sort_order');
+
+  if (error) {
+    throw new Error(
+      `Không đọc được danh mục: ${error.message}`
+    );
+  }
+
+  return (data ?? []) as Category[];
+}
+
+async function getSources(): Promise<Source[]> {
+  const { data, error } = await supabase
+    .from('sources')
+    .select(
+      'id, name, feed_url, country, credibility_score'
+    )
+    .eq('is_active', true)
+    .not('feed_url', 'is', null);
+
+  if (error) {
+    throw new Error(
+      `Không đọc được nguồn RSS: ${error.message}`
+    );
+  }
+
+  return (data ?? []) as Source[];
+}
+
+async function getHotKeywords(): Promise<HotKeyword[]> {
+  const { data, error } = await supabase
+    .from('hot_keywords')
+    .select('keyword, weight')
+    .eq('is_active', true);
+
+  if (error) {
+    console.warn(
+      `Không đọc được từ khóa nóng: ${error.message}`
+    );
+
+    return [];
+  }
+
+  return (data ?? []) as HotKeyword[];
+}
+
+// ============================================================
+// THU THẬP TIN TỪ MỘT NGUỒN
+// ============================================================
+
 async function crawlSource(
-  source: FeedSource,
-  categories: Array<{ id: string; name: string; slug: string }>,
-  hotKeywords: Array<{ keyword: string; weight: number }>
+  source: Source,
+  categories: Category[],
+  hotKeywords: HotKeyword[]
 ): Promise<CrawlResult> {
-  const start = Date.now();
+  const startedAt = Date.now();
+
   let articlesFound = 0;
   let articlesSaved = 0;
   let duplicates = 0;
+  let skipped = 0;
+  let insertErrors = 0;
 
   try {
-    console.log(`  📡 Fetching: ${source.name}`);
-    const feed = await parser.parseURL(source.feed_url);
+    console.log(`\nĐang đọc: ${source.name}`);
+    console.log(`RSS: ${source.feed_url}`);
 
-    for (const item of feed.items ?? []) {
-      const title = normalizeText(item.title);
-      const link = item.link ?? '';
+    const feed = await parser.parseURL(
+      source.feed_url
+    );
 
-      if (!title || !link) continue;
-      articlesFound++;
+    const items = (feed.items ?? []).slice(0, 40);
 
-      // Skip already existing
-      if (await articleExists(link)) {
-        duplicates++;
+    for (const rawItem of items) {
+      const item =
+        rawItem as Record<string, unknown>;
+
+      const title = cleanText(item.title);
+      const link = normalizeUrl(
+        item.link ?? item.guid
+      );
+
+      if (!title || !link) {
+        skipped += 1;
         continue;
       }
 
-      const summary = normalizeText(item.contentSnippet ?? item.summary ?? item.content ?? '');
-      const imageUrl = extractImage(item as unknown as Record<string, unknown>);
-      const pubDate = parseDate(item.pubDate ?? item.isoDate);
+      articlesFound += 1;
 
-      // Auto-classify
-      const catResult = classifyCategory(title, summary);
-      const matchedCat = categories.find(c => c.slug === catResult.slug);
-      const categoryId = matchedCat?.id ?? '';
-      const categoryName = matchedCat?.name ?? catResult.name;
+      const summary = cleanText(
+        item.contentSnippet ??
+        item.summary ??
+        item.description ??
+        item.content ??
+        item.contentEncoded ??
+        ''
+      ).slice(0, 500);
 
-      // Calculate hot score
-      const hotScore = await calculateHotScore(
-        source.credibility_score ?? 5,
+      if (!isFoodRelated(title, summary)) {
+        skipped += 1;
+        continue;
+      }
+
+      if (await articleExists(link)) {
+        duplicates += 1;
+        continue;
+      }
+
+      const category = classifyCategory(
+        title,
+        summary,
+        categories
+      );
+
+      const pubDate = parseDate(
+        item.isoDate ??
+        item.pubDate ??
+        item.published ??
+        item.date
+      );
+
+      const imageUrl = extractImage(item);
+
+      const hotScore = calculateHotScore(
+        source.credibility_score,
         pubDate,
         title,
         summary,
         hotKeywords
       );
 
-      // Check if hot (top 5% — score > 75)
       const isHot = hotScore >= 75;
 
-      const article: Omit<ParsedArticle, 'isHot'> = {
-        title,
-        link,
-        summary: summary.slice(0, 300),
-        imageUrl,
-        pubDate,
-        sourceId: source.id,
-        sourceName: source.name,
-        sourceCountry: source.country,
-        categoryId,
-        categorySlug: catResult.slug,
-        categoryName,
-        hotScore,
-      };
+      const { error } = await supabase
+        .from('articles')
+        .insert({
+          title,
+          link,
+          summary,
+          image_url: imageUrl,
+          pub_date: pubDate,
 
-      const { error } = await supabase.from('articles').insert({
-        title: article.title,
-        link: article.link,
-        summary: article.summary,
-        image_url: article.imageUrl,
-        pub_date: article.pubDate,
-        source_id: article.sourceId,
-        source_name: article.sourceName,
-        source_country: article.sourceCountry,
-        category_id: article.categoryId || null,
-        category_slug: article.categorySlug,
-        category_name: article.categoryName,
-        hot_score: article.hotScore,
-        is_hot: article.isHot,
-        is_crawled: true,
-        is_processed: true,
-      });
+          source_id: source.id,
+          source_name: source.name,
+          source_country: source.country,
+
+          category_id: category.id || null,
+          category_slug: category.slug,
+          category_name: category.name,
+
+          hot_score: hotScore,
+          is_hot: isHot,
+
+          language: 'vi',
+          is_crawled: true,
+          is_processed: true,
+          is_archived: false,
+        });
 
       if (error) {
         if (error.code === '23505') {
-          duplicates++;
+          duplicates += 1;
         } else {
-          console.error(`    ⚠️ Insert error: ${error.message}`);
+          insertErrors += 1;
+
+          console.error(
+            `Không lưu được "${title}": ${error.message}`
+          );
         }
       } else {
-        articlesSaved++;
+        articlesSaved += 1;
+
+        console.log(
+          `Đã lưu: ${title}`
+        );
       }
     }
 
-    const durationMs = Date.now() - start;
-    console.log(
-      `  ✅ ${source.name}: found=${articlesFound} saved=${articlesSaved} dup=${duplicates} (${durationMs}ms)`
-    );
-
-    // Update last_fetched
     await supabase
       .from('sources')
-      .update({ last_fetched: new Date().toISOString() })
+      .update({
+        last_fetched: new Date().toISOString(),
+      })
       .eq('id', source.id);
 
+    const status: CrawlResult['status'] =
+      insertErrors > 0 ? 'partial' : 'success';
+
     return {
-      source: source.name,
-      status: 'success',
+      sourceId: source.id,
+      sourceName: source.name,
+      status,
       articlesFound,
       articlesSaved,
       duplicates,
-      durationMs,
+      skipped,
+      durationMs: Date.now() - startedAt,
     };
-  } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error(`  ❌ ${source.name}: ${errorMsg}`);
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : String(error);
+
+    console.error(
+      `Nguồn ${source.name} bị lỗi: ${errorMessage}`
+    );
+
     return {
-      source: source.name,
-      status: 'failed',
+      sourceId: source.id,
+      sourceName: source.name,
+      status: 'error',
       articlesFound,
       articlesSaved,
       duplicates,
-      durationMs: Date.now() - start,
-      error: errorMsg,
+      skipped,
+      durationMs: Date.now() - startedAt,
+      errorMessage,
     };
   }
 }
 
-async function logCrawlResults(results: CrawlResult[]) {
-  for (const r of results) {
-    const source = await supabase
-      .from('sources')
-      .select('id, name')
-      .eq('name', r.source)
-      .single();
+// ============================================================
+// GHI NHẬT KÝ
+// ============================================================
 
-    if (!source.data) continue;
-
-    await supabase.from('crawl_logs').insert({
-      feed_id: source.data.id,
-      feed_name: r.source,
-      status: r.status,
-      articles_fetched: r.articlesFound,
-      articles_new: r.articlesSaved,
-      articles_duplicates: r.duplicates,
+async function saveCrawlLog(
+  result: CrawlResult
+): Promise<void> {
+  const { error } = await supabase
+    .from('crawl_logs')
+    .insert({
+      feed_id: result.sourceId,
+      feed_name: result.sourceName,
+      status: result.status,
+      articles_fetched: result.articlesFound,
+      articles_new: result.articlesSaved,
+      articles_duplicates: result.duplicates,
       completed_at: new Date().toISOString(),
-      duration_ms: r.durationMs,
-      error_message: r.error ?? null,
+      duration_ms: result.durationMs,
+      error_message:
+        result.errorMessage ?? null,
     });
+
+  if (error) {
+    console.error(
+      `Không ghi được crawl log: ${error.message}`
+    );
   }
 }
 
-async function updateCategoryCounts() {
-  const { data: cats } = await supabase.from('categories').select('id');
-  if (!cats) return;
-  for (const cat of cats) {
-    const { count } = await supabase
-      .from('articles')
-      .select('*', { count: 'exact', head: true })
-      .eq('category_id', cat.id)
-      .eq('is_archived', false);
+// ============================================================
+// CẬP NHẬT SỐ LƯỢNG BÀI
+// ============================================================
+
+async function updateCounts(): Promise<void> {
+  const { data: categories, error } =
     await supabase
       .from('categories')
-      .update({ article_count: count ?? 0 })
-      .eq('id', cat.id);
+      .select('id');
+
+  if (error || !categories) {
+    return;
+  }
+
+  for (const category of categories) {
+    const { count } = await supabase
+      .from('articles')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('category_id', category.id)
+      .eq('is_archived', false);
+
+    await supabase
+      .from('categories')
+      .update({
+        article_count: count ?? 0,
+      })
+      .eq('id', category.id);
+  }
+
+  const { data: sources } = await supabase
+    .from('sources')
+    .select('id');
+
+  if (!sources) {
+    return;
+  }
+
+  for (const source of sources) {
+    const { count } = await supabase
+      .from('articles')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('source_id', source.id)
+      .eq('is_archived', false);
+
+    await supabase
+      .from('sources')
+      .update({
+        articles_count: count ?? 0,
+      })
+      .eq('id', source.id);
   }
 }
 
-// ─── Entry point ──────────────────────────────────────
-async function main() {
-  console.log('\n🚀 FoodXplore Crawler — Starting\n');
-  console.log(`⏰ Started at: ${new Date().toLocaleString('vi-VN')}`);
+// ============================================================
+// CHẠY CRAWLER
+// ============================================================
 
-  const startTotal = Date.now();
+async function main(): Promise<void> {
+  console.log('');
+  console.log('FoodXplore RSS Crawler bắt đầu');
+  console.log(
+    `Thời gian: ${new Date().toLocaleString(
+      'vi-VN',
+      {
+        timeZone: 'Asia/Ho_Chi_Minh',
+      }
+    )}`
+  );
 
-  // Load metadata
-  const [categories, sources, hotKeywords] = await Promise.all([
+  const [
+    categories,
+    sources,
+    hotKeywords,
+  ] = await Promise.all([
     getCategories(),
-    getActiveSources(),
+    getSources(),
     getHotKeywords(),
   ]);
 
-  console.log(`📊 ${sources.length} active sources | ${hotKeywords.length} hot keywords | ${categories.length} categories\n`);
+  console.log(
+    `${sources.length} nguồn RSS, ` +
+    `${categories.length} danh mục, ` +
+    `${hotKeywords.length} từ khóa nóng`
+  );
 
-  // Crawl all sources sequentially (tránh rate limit)
-  const results: CrawlResult[] = [];
-  for (const source of sources) {
-    const result = await crawlSource(source, categories, hotKeywords);
-    results.push(result);
-    // Delay giữa các request để tránh bị block
-    await new Promise(r => setTimeout(r, 2000));
+  if (sources.length === 0) {
+    throw new Error(
+      'Không có nguồn nào chứa feed_url.'
+    );
   }
 
-  // Log results
-  await logCrawlResults(results);
+  const results: CrawlResult[] = [];
 
-  // Update category counts
-  await updateCategoryCounts();
+  for (const source of sources) {
+    const result = await crawlSource(
+      source,
+      categories,
+      hotKeywords
+    );
 
-  const totalDuration = Date.now() - startTotal;
-  const totalSaved = results.reduce((s, r) => s + r.articlesSaved, 0);
-  const totalFound = results.reduce((s, r) => s + r.articlesFound, 0);
-  const totalDup = results.reduce((s, r) => s + r.duplicates, 0);
-  const failedCount = results.filter(r => r.status === 'failed').length;
+    results.push(result);
+    await saveCrawlLog(result);
 
-  console.log('\n─────────────────────────────────────');
-  console.log(`📋 SUMMARY:`);
-  console.log(`   Total found:   ${totalFound}`);
-  console.log(`   Total saved:   ${totalSaved}`);
-  console.log(`   Duplicates:    ${totalDup}`);
-  console.log(`   Failed:       ${failedCount}/${sources.length}`);
-  console.log(`   Total time:   ${Math.round(totalDuration / 1000)}s`);
-  console.log('─────────────────────────────────────\n');
+    // Nghỉ giữa các nguồn để tránh bị chặn
+    await wait(1500);
+  }
 
-  // Cleanup old articles (archive > 30 days, delete > 90 days)
-  const { count: archived } = await supabase
-    .from('articles')
-    .update({ is_archived: true })
-    .eq('is_archived', false)
-    .lt('pub_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+  await updateCounts();
 
-  if (archived) console.log(`🗑️ Archived ${archived} old articles`);
+  const totalFound = results.reduce(
+    (total, result) =>
+      total + result.articlesFound,
+    0
+  );
+
+  const totalSaved = results.reduce(
+    (total, result) =>
+      total + result.articlesSaved,
+    0
+  );
+
+  const totalDuplicates = results.reduce(
+    (total, result) =>
+      total + result.duplicates,
+    0
+  );
+
+  const totalSkipped = results.reduce(
+    (total, result) =>
+      total + result.skipped,
+    0
+  );
+
+  const totalErrors = results.filter(
+    (result) => result.status === 'error'
+  ).length;
+
+  console.log('');
+  console.log('==============================');
+  console.log('KẾT QUẢ CRAWLER');
+  console.log(`Tìm thấy: ${totalFound}`);
+  console.log(`Đã lưu: ${totalSaved}`);
+  console.log(`Bị trùng: ${totalDuplicates}`);
+  console.log(`Không liên quan: ${totalSkipped}`);
+  console.log(`Nguồn lỗi: ${totalErrors}`);
+  console.log('==============================');
+
+  if (totalErrors === sources.length) {
+    process.exitCode = 1;
+  }
 }
 
-main().catch(err => {
-  console.error('💥 Fatal error:', err);
+main().catch((error) => {
+  console.error('');
+  console.error(
+    'Crawler thất bại:',
+    error instanceof Error
+      ? error.message
+      : error
+  );
+
   process.exit(1);
 });
