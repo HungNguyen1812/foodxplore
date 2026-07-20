@@ -1,11 +1,11 @@
-import { Suspense } from 'react';
-import { createServerClient } from '@/lib/supabase';
+﻿import { Suspense } from 'react';
+import { createServerClient } from '@/lib/supabase-server';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { ArticleCard } from '@/components/ArticleCard';
 import { HotBanner } from '@/components/HotBanner';
 import { SidebarRight } from '@/components/SidebarRight';
 
-// ISR: revalidate mỗi 15 phút
+// ISR: revalidate má»—i 15 phÃºt
 export const revalidate = 900;
 
 async function getHomeData() {
@@ -52,12 +52,12 @@ export default async function HomePage() {
         {featured && (
           <>
             <HotBanner article={featured} />
-            <p className="section-label">🔥 Nổi bật</p>
+            <p className="section-label">ðŸ”¥ Ná»•i báº­t</p>
             <ArticleCard article={featured} variant="featured" />
           </>
         )}
 
-        <p className="section-label">📋 Tin mới nhất</p>
+        <p className="section-label">ðŸ“‹ Tin má»›i nháº¥t</p>
         <Suspense fallback={<div className="article-list"><ArticleSkeleton /></div>}>
           <div className="article-list">
             {rest.map(article => (
@@ -81,3 +81,5 @@ function ArticleSkeleton() {
     </>
   );
 }
+
+

@@ -1,5 +1,5 @@
-import { notFound } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase';
+﻿import { notFound } from 'next/navigation';
+import { createServerClient } from '@/lib/supabase-server';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { ArticleCard } from '@/components/ArticleCard';
 import { SidebarRight } from '@/components/SidebarRight';
@@ -12,13 +12,13 @@ const VALID_CATEGORIES = [
 ];
 
 const CAT_ICONS: Record<string, string> = {
-  'kinh-doanh': '💼',
-  'an-toan-thuc-pham': '🛡️',
-  'gia-ca': '📊',
-  'cong-nghe': '⚡',
-  'quy-dinh': '📜',
-  'suc-khoe': '🥗',
-  'nong-nghiep': '🌾',
+  'kinh-doanh': 'ðŸ’¼',
+  'an-toan-thuc-pham': 'ðŸ›¡ï¸',
+  'gia-ca': 'ðŸ“Š',
+  'cong-nghe': 'âš¡',
+  'quy-dinh': 'ðŸ“œ',
+  'suc-khoe': 'ðŸ¥—',
+  'nong-nghiep': 'ðŸŒ¾',
 };
 
 async function getCategoryData(slug: string) {
@@ -60,7 +60,7 @@ export default async function CategoryPage({ params }: Props) {
   const counts: Record<string, number> = {};
   for (const c of categories) counts[c.slug] = c.article_count ?? 0;
 
-  const icon = CAT_ICONS[slug] ?? '📋';
+  const icon = CAT_ICONS[slug] ?? 'ðŸ“‹';
   const catName = category?.name ?? slug;
 
   return (
@@ -68,15 +68,15 @@ export default async function CategoryPage({ params }: Props) {
       <CategorySidebar counts={counts} />
 
       <main className="main-content">
-        <p className="section-label">{icon} {catName} nổi bật</p>
+        <p className="section-label">{icon} {catName} ná»•i báº­t</p>
         <div className="article-list">
           {articles.map(article => (
             <ArticleCard key={article.id} article={article} />
           ))}
           {articles.length === 0 && (
             <div className="empty-state">
-              <div className="empty-state-icon">📭</div>
-              <div className="empty-state-text">Chưa có tin nào trong danh mục này.</div>
+              <div className="empty-state-icon">ðŸ“­</div>
+              <div className="empty-state-text">ChÆ°a cÃ³ tin nÃ o trong danh má»¥c nÃ y.</div>
             </div>
           )}
         </div>
@@ -86,3 +86,5 @@ export default async function CategoryPage({ params }: Props) {
     </div>
   );
 }
+
+
