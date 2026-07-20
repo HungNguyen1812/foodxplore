@@ -621,4 +621,24 @@ h1, h2, h3, h4, h5, h6 {
 }
 .empty-state-icon { font-size: 2rem; margin-bottom: 8px; }
 .empty-state-text { font-size: 0.88rem; font-weight: 500; }
+/* Cho phép click toàn bộ bài viết */
+.article-featured,
+.article-card,
+.breaking-banner {
+  position: relative;
+  cursor: pointer;
+}
 
+.article-title a::after,
+.card-title a::after,
+.breaking-text a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.read-btn {
+  position: relative;
+  z-index: 2;
+}
