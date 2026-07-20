@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 import requests
 from langdetect import DetectorFactory, detect
-from transformers import MarianMTModel, MarianTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 
 DetectorFactory.seed = 0
@@ -19,8 +19,8 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv(
     "SUPABASE_SERVICE_ROLE_KEY"
 )
 
-MODEL_NAME = "Helsinki-NLP/opus-mt-en-vi"
-BATCH_SIZE = 8
+MODEL_NAME = "VietAI/envit5-translation"
+BATCH_SIZE = 4
 ARTICLE_LIMIT = 100
 
 
@@ -97,8 +97,8 @@ def translate_texts(tokenizer, model, texts):
         batch = texts[start:start + BATCH_SIZE]
 
         # Mô hình yêu cầu mã ngôn ngữ đích tiếng Việt.
-        inputs = [
-            f">>vie<< {clean_text(text)}"
+         inputs = [
+            f"en: {clean_text(text)}"
             for text in batch
         ]
 
@@ -122,10 +122,14 @@ def translate_texts(tokenizer, model, texts):
             skip_special_tokens=True,
         )
 
-        translated.extend(
-            clean_text(result)
-            for result in results
-        )
+      for result in results:
+            result = re.sub(
+                r"^\s*vi\s*:\s*",
+                "",
+                result,
+                flags=re.IGNORECASE,
+            )
+            translated.append(clean_text(result))
 
         print(
             f"Đã dịch {min(start + BATCH_SIZE, len(texts))}"
@@ -181,8 +185,8 @@ def main():
 
     print(f"Đang tải mô hình {MODEL_NAME}...")
 
-    tokenizer = MarianTokenizer.from_pretrained(MODEL_NAME)
-    model = MarianMTModel.from_pretrained(MODEL_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
     model.eval()
 
     texts = []
