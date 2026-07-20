@@ -1,5 +1,5 @@
 ﻿import { notFound } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { ArticleCard } from '@/components/ArticleCard';
 import { SidebarRight } from '@/components/SidebarRight';
@@ -22,7 +22,7 @@ const CAT_ICONS: Record<string, string> = {
 };
 
 async function getCategoryData(slug: string) {
-  const supabase = createServerClient();
+  const supabase = await createServerSupabaseClient();
 
   const [categoryRes, articlesRes, categoriesRes, sourcesRes, trendsRes] = await Promise.all([
     supabase.from('categories').select('*').eq('slug', slug).single(),
@@ -86,5 +86,6 @@ export default async function CategoryPage({ params }: Props) {
     </div>
   );
 }
+
 
 

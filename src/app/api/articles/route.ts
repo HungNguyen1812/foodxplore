@@ -1,10 +1,10 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient();
+  const supabase = await createServerSupabaseClient();
   const { searchParams } = req.nextUrl;
 
   const category = searchParams.get('category');
@@ -53,5 +53,6 @@ export async function GET(req: NextRequest) {
     },
   });
 }
+
 
 

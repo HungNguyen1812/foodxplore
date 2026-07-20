@@ -1,10 +1,10 @@
 ﻿import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const supabase = createServerClient();
+  const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
     .from('v_hot_articles')
@@ -17,5 +17,6 @@ export async function GET() {
 
   return NextResponse.json({ data: data?.[0] ?? null });
 }
+
 
 

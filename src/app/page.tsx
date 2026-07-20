@@ -1,5 +1,5 @@
 ﻿import { Suspense } from 'react';
-import { createServerClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { CategorySidebar } from '@/components/CategorySidebar';
 import { ArticleCard } from '@/components/ArticleCard';
 import { HotBanner } from '@/components/HotBanner';
@@ -9,7 +9,7 @@ import { SidebarRight } from '@/components/SidebarRight';
 export const revalidate = 900;
 
 async function getHomeData() {
-  const supabase = createServerClient();
+  const supabase = await createServerSupabaseClient();
 
   const [articlesRes, categoriesRes, sourcesRes, trendsRes] = await Promise.all([
     supabase
@@ -81,5 +81,6 @@ function ArticleSkeleton() {
     </>
   );
 }
+
 
 
