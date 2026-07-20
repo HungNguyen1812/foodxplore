@@ -68,15 +68,15 @@ export default async function CategoryPage({ params }: Props) {
       <CategorySidebar counts={counts} />
 
       <main className="main-content">
-        <p className="section-label">{icon} {catName} ná»•i báº­t</p>
+        <p className="section-label">{icon} {catName} nổi bật</p>
         <div className="article-list">
           {articles.map(article => (
             <ArticleCard key={article.id} article={article} />
           ))}
           {articles.length === 0 && (
             <div className="empty-state">
-              <div className="empty-state-icon">ðŸ“­</div>
-              <div className="empty-state-text">ChÆ°a cÃ³ tin nÃ o trong danh má»¥c nÃ y.</div>
+              <div className="empty-state-icon">📭</div>
+              <div className="empty-state-text">Chưa có tin nào trong danh mục này.</div>
             </div>
           )}
         </div>
