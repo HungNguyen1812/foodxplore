@@ -4,14 +4,15 @@
   "private": true,
   "scripts": {
     "start": "tsx src/index.ts",
+    "repair": "tsx src/repair-content.ts",
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
-    "rss-parser": "^3.13.0",
-    "cheerio": "^1.0.0",
-    "node-fetch": "^3.3.2",
     "@supabase/supabase-js": "^2.45.0",
-    "date-fns": "^3.6.0"
+    "cheerio": "^1.0.0",
+    "date-fns": "^3.6.0",
+    "node-fetch": "^3.3.2",
+    "rss-parser": "^3.13.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

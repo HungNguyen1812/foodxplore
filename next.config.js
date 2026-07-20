@@ -1,32 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // MVP: cho phép ảnh HTTPS từ các nguồn RSS bên ngoài
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.vnexpress.net',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.vnecdn.net',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.cafef.vn',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.vnncdn.net',
+        hostname: '**',
       },
     ],
+
+    // Trình duyệt tải ảnh trực tiếp, tránh CDN báo chặn optimizer
+    unoptimized: true,
   },
 
   async headers() {
