@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-
+import { usePathname, useRouter } from 'next/navigation';
 const categories = [
   { slug: 'tong-hop', name: 'Tổng hợp', icon: '📋' },
   { slug: 'kinh-doanh', name: 'Kinh doanh', icon: '💼' },
@@ -19,6 +18,20 @@ export function Topbar() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [dateStr, setDateStr] = useState('');
   const pathname = usePathname();
+const router = useRouter();
+const [searchQuery, setSearchQuery] = useState('');
+
+function handleSearch(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
+
+  const keyword = searchQuery.trim();
+
+  if (keyword) {
+    router.push(`/?q=${encodeURIComponent(keyword)}`);
+  } else {
+    router.push('/');
+  }
+}
 
   useEffect(() => {
     // Init theme
@@ -72,10 +85,29 @@ export function Topbar() {
 
           {/* Right actions */}
           <div className="topbar-right">
-            <div className="search-bar">
-              <span style={{ fontSize: '0.82rem' }}>🔍</span>
-              <input type="text" placeholder="Tìm tin..." aria-label="Tìm kiếm" />
-            </div>
+            <form className="search-bar" onSubmit={handleSearch}>
+  <button
+    type="submit"
+    aria-label="Tìm kiếm"
+    style={{
+      background: 'none',
+      border: 0,
+      padding: 0,
+      cursor: 'pointer',
+      fontSize: '0.82rem',
+    }}
+  >
+    🔍
+  </button>
+
+  <input
+    type="search"
+    placeholder="Tìm tin..."
+    aria-label="Tìm kiếm"
+    value={searchQuery}
+    onChange={(event) => setSearchQuery(event.target.value)}
+  />
+</form>
             <button className="icon-btn" onClick={toggleTheme} aria-label="Đổi giao diện">
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
