@@ -5,7 +5,7 @@ import { ArticleCard } from '@/components/ArticleCard';
 import { HotBanner } from '@/components/HotBanner';
 import { SidebarRight } from '@/components/SidebarRight';
 
-// ISR: revalidate má»—i 15 phÃºt
+// ISR: revalidate mỗi 15 phút
 export const revalidate = 900;
 
 async function getHomeData() {
@@ -52,12 +52,12 @@ export default async function HomePage() {
         {featured && (
           <>
             <HotBanner article={featured} />
-            <p className="section-label">ðŸ”¥ Ná»•i báº­t</p>
+            <p className="section-label">🔥 Nổi bật</p>
             <ArticleCard article={featured} variant="featured" />
           </>
         )}
 
-        <p className="section-label">ðŸ“‹ Tin má»›i nháº¥t</p>
+        <p className="section-label">ðŸ“‹📋 Tin mới nhất</p>
         <Suspense fallback={<div className="article-list"><ArticleSkeleton /></div>}>
           <div className="article-list">
             {rest.map(article => (
