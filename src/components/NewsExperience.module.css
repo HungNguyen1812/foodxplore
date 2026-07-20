@@ -372,6 +372,13 @@
   font-weight: 550;
 }
 
+.takeawayPending {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  font-style: italic;
+}
+
 .originalText {
   color: var(--text-secondary);
   font-size: 0.95rem;

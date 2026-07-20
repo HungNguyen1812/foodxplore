@@ -45,13 +45,13 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Cache VietAI translation model
+      - name: Cache translation and summarization models
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
-          key: vietai-envit5-translation-v1
+          key: foodxplore-vietai-models-v2
 
-      - name: Install translation packages
+      - name: Install language packages
         run: |
           python -m pip install --upgrade pip
           pip install torch --index-url https://download.pytorch.org/whl/cpu
@@ -60,6 +60,13 @@ jobs:
       - name: Translate English articles to Vietnamese
         working-directory: crawler
         run: python translate_local.py
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Create independent key takeaways
+        working-directory: crawler
+        run: python summarize_local.py
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

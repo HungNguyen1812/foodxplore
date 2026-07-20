@@ -53,6 +53,36 @@ function getSource(article: DetailArticle): Source | null {
   return article.source ?? null;
 }
 
+function normalizeForComparison(value?: string | null): string {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function hasDistinctTakeaway(
+  takeaway?: string | null,
+  sourceExcerpt?: string | null
+): takeaway is string {
+  const normalizedTakeaway = normalizeForComparison(takeaway);
+  const normalizedSource = normalizeForComparison(sourceExcerpt);
+
+  if (normalizedTakeaway.length < 40) {
+    return false;
+  }
+
+  if (!normalizedSource) {
+    return true;
+  }
+
+  return normalizedTakeaway !== normalizedSource &&
+    !normalizedSource.includes(normalizedTakeaway) &&
+    !normalizedTakeaway.includes(normalizedSource);
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await getArticle(params.id);
 
@@ -81,10 +111,11 @@ export default async function ArticleDetailPage({ params }: Props) {
 
   const source = getSource(article);
   const sourceName = source?.name ?? article.source_name ?? 'Nguồn tin';
-  const keyTakeaway =
-    article.summary ?? article.content_preview ?? 'Bài viết chưa có phần tóm tắt.';
   const originalExcerpt =
     article.original_summary ?? article.content_preview ?? article.summary;
+  const keyTakeaway = hasDistinctTakeaway(article.key_takeaway, originalExcerpt)
+    ? article.key_takeaway
+    : null;
   const originalTitle = article.original_title ?? article.title;
 
   return (
@@ -132,7 +163,14 @@ export default async function ArticleDetailPage({ params }: Props) {
         <div className={styles.contentStack}>
           <section className={styles.takeawayBox}>
             <div className={styles.boxLabel}>📖 Ý chính đáng đọc</div>
-            <p className={styles.takeawayText}>{keyTakeaway}</p>
+            {keyTakeaway ? (
+              <p className={styles.takeawayText}>{keyTakeaway}</p>
+            ) : (
+              <p className={styles.takeawayPending}>
+                Bản tóm lược độc lập đang được xử lý. FoodXplore không lặp lại
+                trích đoạn gốc ở phần này.
+              </p>
+            )}
           </section>
 
           <section className={styles.originalBox}>

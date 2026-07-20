@@ -6,6 +6,9 @@ export interface Article {
   content_preview?: string | null;
   original_title?: string | null;
   original_summary?: string | null;
+  key_takeaway?: string | null;
+  takeaway_model?: string | null;
+  takeaway_generated_at?: string | null;
   link: string;
   image_url: string | null;
   image_thumb?: string | null;

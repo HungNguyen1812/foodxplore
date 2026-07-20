@@ -72,7 +72,9 @@ export function ArticleCard({ article, variant = 'card' }: Props) {
             {article.title}
           </h2>
 
-          {article.summary && <p className={styles.cardSummary}>{article.summary}</p>}
+          {(article.key_takeaway || article.summary) && (
+            <p className={styles.cardSummary}>{article.key_takeaway || article.summary}</p>
+          )}
 
           <div className={styles.cardBottom}>
             <span className={styles.sourceCount}>📰 1 nguồn đưa tin</span>
