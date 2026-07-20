@@ -3,7 +3,6 @@ name: Crawl News
 on:
   schedule:
     - cron: "0 23,5 * * *"
-
   workflow_dispatch:
 
 permissions:
@@ -12,7 +11,7 @@ permissions:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-   timeout-minutes: 45
+    timeout-minutes: 45
 
     steps:
       - name: Download source code
@@ -46,7 +45,7 @@ jobs:
         with:
           python-version: "3.11"
 
-       - name: Cache VietAI translation model
+      - name: Cache VietAI translation model
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface

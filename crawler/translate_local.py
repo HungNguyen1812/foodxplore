@@ -10,14 +10,8 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 DetectorFactory.seed = 0
 
-SUPABASE_URL = (
-    os.getenv("NEXT_PUBLIC_SUPABASE_URL")
-    or os.getenv("SUPABASE_URL")
-)
-
-SUPABASE_SERVICE_ROLE_KEY = os.getenv(
-    "SUPABASE_SERVICE_ROLE_KEY"
-)
+SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 MODEL_NAME = "VietAI/envit5-translation"
 BATCH_SIZE = 4
@@ -25,9 +19,7 @@ ARTICLE_LIMIT = 100
 
 
 if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
-    raise RuntimeError(
-        "Thiếu SUPABASE_URL hoặc SUPABASE_SERVICE_ROLE_KEY"
-    )
+    raise RuntimeError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
 
 
 HEADERS = {
@@ -45,7 +37,6 @@ def clean_text(value):
     value = html.unescape(str(value))
     value = re.sub(r"<[^>]+>", " ", value)
     value = re.sub(r"\s+", " ", value)
-
     return value.strip()
 
 
@@ -67,7 +58,6 @@ def is_english(title, summary):
 
 def fetch_international_articles():
     endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/articles"
-
     params = {
         "select": (
             "id,title,summary,source_name,"
@@ -79,13 +69,7 @@ def fetch_international_articles():
         "limit": str(ARTICLE_LIMIT),
     }
 
-    response = requests.get(
-        endpoint,
-        headers=HEADERS,
-        params=params,
-        timeout=60,
-    )
-
+    response = requests.get(endpoint, headers=HEADERS, params=params, timeout=60)
     response.raise_for_status()
     return response.json()
 
@@ -94,13 +78,8 @@ def translate_texts(tokenizer, model, texts):
     translated = []
 
     for start in range(0, len(texts), BATCH_SIZE):
-        batch = texts[start:start + BATCH_SIZE]
-
-        # Mô hình yêu cầu mã ngôn ngữ đích tiếng Việt.
-         inputs = [
-            f"en: {clean_text(text)}"
-            for text in batch
-        ]
+        batch = texts[start : start + BATCH_SIZE]
+        inputs = [f"en: {clean_text(text)}" for text in batch]
 
         encoded = tokenizer(
             inputs,
@@ -117,34 +96,20 @@ def translate_texts(tokenizer, model, texts):
             early_stopping=True,
         )
 
-        results = tokenizer.batch_decode(
-            generated,
-            skip_special_tokens=True,
-        )
+        results = tokenizer.batch_decode(generated, skip_special_tokens=True)
 
-      for result in results:
-            result = re.sub(
-                r"^\s*vi\s*:\s*",
-                "",
-                result,
-                flags=re.IGNORECASE,
-            )
+        for result in results:
+            result = re.sub(r"^\s*vi\s*:\s*", "", result, flags=re.IGNORECASE)
             translated.append(clean_text(result))
 
-        print(
-            f"Đã dịch {min(start + BATCH_SIZE, len(texts))}"
-            f"/{len(texts)} đoạn"
-        )
+        completed = min(start + BATCH_SIZE, len(texts))
+        print(f"Translated {completed}/{len(texts)} text segments")
 
     return translated
 
 
 def update_article(article_id, title, summary):
-    endpoint = (
-        f"{SUPABASE_URL.rstrip('/')}/rest/v1/articles"
-        f"?id=eq.{article_id}"
-    )
-
+    endpoint = f"{SUPABASE_URL.rstrip('/')}/rest/v1/articles?id=eq.{article_id}"
     payload = {
         "title": title,
         "summary": summary or None,
@@ -158,33 +123,24 @@ def update_article(article_id, title, summary):
         json=payload,
         timeout=60,
     )
-
     response.raise_for_status()
 
 
 def main():
     articles = fetch_international_articles()
-
     articles_to_translate = [
         article
         for article in articles
-        if is_english(
-            article.get("title"),
-            article.get("summary"),
-        )
+        if is_english(article.get("title"), article.get("summary"))
     ]
 
-    print(
-        f"Tìm thấy {len(articles_to_translate)} "
-        "bài tiếng Anh cần dịch"
-    )
+    print(f"Found {len(articles_to_translate)} English articles to translate")
 
     if not articles_to_translate:
-        print("Không có bài mới cần dịch")
+        print("No new English articles need translation")
         return
 
-    print(f"Đang tải mô hình {MODEL_NAME}...")
-
+    print(f"Loading translation model: {MODEL_NAME}")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
     model.eval()
@@ -194,7 +150,6 @@ def main():
 
     for article in articles_to_translate:
         article_id = article["id"]
-
         title = clean_text(article.get("title"))
         summary = clean_text(article.get("summary"))
 
@@ -206,62 +161,30 @@ def main():
             texts.append(summary)
             references.append((article_id, "summary"))
 
-    translated_texts = translate_texts(
-        tokenizer,
-        model,
-        texts,
-    )
-
+    translated_texts = translate_texts(tokenizer, model, texts)
     translated_by_article = {}
 
-    for reference, translated_text in zip(
-        references,
-        translated_texts,
-    ):
+    for reference, translated_text in zip(references, translated_texts):
         article_id, field = reference
-
-        if article_id not in translated_by_article:
-            translated_by_article[article_id] = {}
-
-        translated_by_article[article_id][field] = (
-            translated_text
-        )
+        translated_by_article.setdefault(article_id, {})[field] = translated_text
 
     updated_count = 0
 
     for article in articles_to_translate:
         article_id = article["id"]
-        translated = translated_by_article.get(
-            article_id,
-            {},
-        )
-
+        translated = translated_by_article.get(article_id, {})
         translated_title = translated.get("title")
         translated_summary = translated.get("summary")
 
         if not translated_title:
-            print(
-                f"Bỏ qua bài {article_id}: "
-                "không dịch được tiêu đề"
-            )
+            print(f"Skipping article {article_id}: title translation is empty")
             continue
 
-        update_article(
-            article_id,
-            translated_title,
-            translated_summary,
-        )
-
+        update_article(article_id, translated_title, translated_summary)
         updated_count += 1
+        print(f"Updated article: {translated_title}")
 
-        print(
-            f"Đã cập nhật: {translated_title}"
-        )
-
-    print(
-        f"Hoàn thành: đã dịch {updated_count} "
-        "bài sang tiếng Việt"
-    )
+    print(f"Finished: translated {updated_count} articles into Vietnamese")
 
 
 if __name__ == "__main__":
