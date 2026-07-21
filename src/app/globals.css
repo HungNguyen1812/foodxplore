@@ -665,3 +665,220 @@ h1, h2, h3, h4, h5, h6 {
     height: 48px;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Responsive layout hardening
+   Hidden sidebars must also release their grid tracks. These rules are kept
+   last so they override the older token-only breakpoints above.
+   -------------------------------------------------------------------------- */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.layout,
+.main-content,
+.article-list,
+.topbar-inner,
+.footer-inner {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(160px, 180px) minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .sidebar-right {
+    display: none !important;
+  }
+}
+
+@media (max-width: 780px) {
+  :root {
+    --sidebar-width: 0px;
+    --right-width: 0px;
+    --topbar-height: 56px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 12px;
+  }
+
+  .layout {
+    display: block;
+    width: 100%;
+  }
+
+  .sidebar-left,
+  .sidebar-right {
+    display: none !important;
+  }
+
+  .topbar-inner {
+    height: var(--topbar-height);
+    padding-inline: 12px;
+    gap: 8px;
+  }
+
+  .brand-wrap {
+    min-width: 0;
+  }
+
+  .brand-image {
+    width: 156px;
+    height: 42px;
+    border-radius: 7px;
+  }
+
+  .topbar-center {
+    display: none;
+  }
+
+  .topbar-right {
+    gap: 4px;
+  }
+
+  .search-bar {
+    display: flex;
+    min-width: 0;
+    padding: 5px 8px;
+  }
+
+  .search-bar input {
+    width: 88px;
+    min-width: 0;
+    font-size: 0.78rem;
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .mobile-cat-bar {
+    display: flex !important;
+    position: sticky;
+    top: var(--topbar-height);
+    z-index: 90;
+    width: 100%;
+  }
+
+  .mobile-scroll {
+    width: 100%;
+    padding: 7px 12px;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-inline: contain;
+  }
+
+  .mobile-cat-btn {
+    min-height: 36px;
+    padding: 6px 10px;
+    scroll-snap-align: start;
+  }
+
+  .main-content {
+    width: 100%;
+    padding: 14px 0 20px;
+  }
+
+  .breaking-banner {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    margin-bottom: 13px;
+    gap: 9px;
+    border-radius: 11px;
+  }
+
+  .breaking-badge {
+    padding: 3px 7px;
+    font-size: 0.61rem;
+  }
+
+  .breaking-text {
+    min-width: 0;
+    font-size: 0.8rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .section-label {
+    width: 100%;
+    min-width: 0;
+    margin: 12px 0 9px;
+    font-size: 0.66rem;
+    line-height: 1.35;
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .article-list {
+    width: 100%;
+    gap: 9px;
+  }
+
+  .empty-state {
+    padding: 28px 16px;
+  }
+
+  .footer {
+    margin-top: 20px;
+    padding: 18px 12px;
+  }
+
+  .footer-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .footer-meta {
+    line-height: 1.55;
+  }
+}
+
+@media (max-width: 430px) {
+  .container {
+    padding-inline: 9px;
+  }
+
+  .topbar-inner {
+    padding-inline: 9px;
+  }
+
+  .brand-image {
+    width: 132px;
+    height: 38px;
+  }
+
+  .search-bar input {
+    width: 68px;
+  }
+
+  .mobile-scroll {
+    padding-inline: 9px;
+  }
+
+  .breaking-banner {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 350px) {
+  .brand-image {
+    width: 116px;
+    height: 36px;
+  }
+
+  .search-bar input {
+    width: 56px;
+  }
+}

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Topbar } from '@/components/Topbar';
 import { Footer } from '@/components/Footer';
@@ -12,6 +12,13 @@ export const metadata: Metadata = {
     description: 'Tổng hợp tin tức ngành thực phẩm',
     type: 'website',
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
